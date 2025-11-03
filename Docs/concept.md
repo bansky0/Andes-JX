@@ -178,13 +178,13 @@ Este trabajo presenta \*Andes-JX\*, un sintetizador polifónico diseñado con un
 
 |------|-------------|------------------|
 
-| \*\*DSP \& Estructura\*\* | Jhonatan López | Arquitectura del sintetizador, DSP, implementación JUCE. |
+| \*\*DSP \& Arquitectura\*\* | Jhonatan López | Diseño y desarrollo del motor DSP, estructura del plugin, coordinación general del proyecto. |
 
-| \*\*UI \& Experiencia Visual\*\* | \[Nombre de colega] | Diseño de interfaz, conexión de parámetros, mockups y estética. |
+| \*\*UI \& Experiencia Visual\*\* | \Valeria Villareal | DSP complementos, diseño de interfaz, conexión de parámetros, mockups y estética. |
 
 
 
-\*\*Reunión semanal:\*\* Sábado 10:00 AM  
+\*\*Reunión semanal:\*\* Domingo 19:00  
 
 \*\*Plataforma:\*\* GitHub + Discord  
 
