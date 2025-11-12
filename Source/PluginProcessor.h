@@ -9,7 +9,7 @@
 #pragma once
 
 #include <JuceHeader.h>
-
+#include "Synth.h"
 //==============================================================================
 /**
 */
@@ -23,6 +23,7 @@ public:
     //==============================================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
+    void reset() override;
 
    #ifndef JucePlugin_PreferredChannelConfigurations
     bool isBusesLayoutSupported (const BusesLayout& layouts) const override;
@@ -54,6 +55,19 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
 
 private:
+
+    Synth synth; // crete a new object for synth to use thir properties.
+
+    // Splits the audio buffer into smaller segments based on MIDI events
+    // occurring at different times.
+    void splitBufferByEvents(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages);
+    // Processes individual MIDI messages by interpreting the raw MIDI protocol bytes
+    void handleMIDI(uint8_t data0, uint8_t data1, uint8_t data2);
+    // Generates the synth's audio samples for a specific buffer segment
+    // sampleCount = how many samples to generate
+    // bufferOffset = position in the buffer where to start writing
+    void render(juce::AudioBuffer<float>& buffer, int sampleCount, int bufferOffset);
+
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AndesJXAudioProcessor)
 };
