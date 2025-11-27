@@ -10,10 +10,47 @@
 
 #include <JuceHeader.h>
 #include "Synth.h"
+#include "Preset.h"
+
+namespace ParameterID
+{
+    #define PARAMETER_ID(str) const juce::ParameterID str(#str, 1);
+
+    PARAMETER_ID(oscMix)
+    PARAMETER_ID(oscTune)
+    PARAMETER_ID(oscFine)
+    PARAMETER_ID(glideMode)
+    PARAMETER_ID(glideRate)
+    PARAMETER_ID(glideBend)
+    PARAMETER_ID(filterFreq)
+    PARAMETER_ID(filterReso)
+    PARAMETER_ID(filterEnv)
+    PARAMETER_ID(filterLFO)
+    PARAMETER_ID(filterVelocity)
+    PARAMETER_ID(filterAttack)
+    PARAMETER_ID(filterDecay)
+    PARAMETER_ID(filterSustain)
+    PARAMETER_ID(filterRelease)
+    PARAMETER_ID(envAttack)
+    PARAMETER_ID(envDecay)
+    PARAMETER_ID(envSustain)
+    PARAMETER_ID(envRelease)
+    PARAMETER_ID(lfoRate)
+    PARAMETER_ID(vibrato)
+    PARAMETER_ID(noise)
+    PARAMETER_ID(octave)
+    PARAMETER_ID(tuning)
+    PARAMETER_ID(outputLevel)
+    PARAMETER_ID(polyMode)
+
+    #undef PARAMETER_ID
+}
+
 //==============================================================================
 /**
 */
-class AndesJXAudioProcessor  : public juce::AudioProcessor
+class AndesJXAudioProcessor  : public juce::AudioProcessor,
+                            private juce::ValueTree::Listener
 {
 public:
     //==============================================================================
@@ -54,20 +91,57 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
+    juce::AudioProcessorValueTreeState apvts { *this, nullptr, "Parameters", createParameterLayout() };
+
 private:
+    juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
 
-    Synth synth; // crete a new object for synth to use thir properties.
+    void valueTreePropertyChanged(juce::ValueTree&, const juce::Identifier&) override
+    {
+        parametersChanged.store(true);
+    }
 
-    // Splits the audio buffer into smaller segments based on MIDI events
-    // occurring at different times.
+    std::atomic<bool> parametersChanged { false };
+
+    void update();
+    void createPrograms();
+
     void splitBufferByEvents(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages);
-    // Processes individual MIDI messages by interpreting the raw MIDI protocol bytes
     void handleMIDI(uint8_t data0, uint8_t data1, uint8_t data2);
-    // Generates the synth's audio samples for a specific buffer segment
-    // sampleCount = how many samples to generate
-    // bufferOffset = position in the buffer where to start writing
     void render(juce::AudioBuffer<float>& buffer, int sampleCount, int bufferOffset);
+
+    std::vector<Preset> presets;
+    int currentProgram;
+
+    Synth synth;
+
+    juce::AudioParameterFloat* oscMixParam;
+    juce::AudioParameterFloat* oscTuneParam;
+    juce::AudioParameterFloat* oscFineParam;
+    juce::AudioParameterChoice* glideModeParam;
+    juce::AudioParameterFloat* glideRateParam;
+    juce::AudioParameterFloat* glideBendParam;
+    juce::AudioParameterFloat* filterFreqParam;
+    juce::AudioParameterFloat* filterResoParam;
+    juce::AudioParameterFloat* filterEnvParam;
+    juce::AudioParameterFloat* filterLFOParam;
+    juce::AudioParameterFloat* filterVelocityParam;
+    juce::AudioParameterFloat* filterAttackParam;
+    juce::AudioParameterFloat* filterDecayParam;
+    juce::AudioParameterFloat* filterSustainParam;
+    juce::AudioParameterFloat* filterReleaseParam;
+    juce::AudioParameterFloat* envAttackParam;
+    juce::AudioParameterFloat* envDecayParam;
+    juce::AudioParameterFloat* envSustainParam;
+    juce::AudioParameterFloat* envReleaseParam;
+    juce::AudioParameterFloat* lfoRateParam;
+    juce::AudioParameterFloat* vibratoParam;
+    juce::AudioParameterFloat* noiseParam;
+    juce::AudioParameterFloat* octaveParam;
+    juce::AudioParameterFloat* tuningParam;
+    juce::AudioParameterFloat* outputLevelParam;
+    juce::AudioParameterChoice* polyModeParam;
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AndesJXAudioProcessor)
-};
+};gi

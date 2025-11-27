@@ -48,38 +48,45 @@ void Synth::render(float** outputBuffers, int sampleCount)
 {
     float* outputBufferLeft = outputBuffers[0];
     float* outputBufferRight = outputBuffers[1];
+
     for (int sample = 0; sample < sampleCount; ++sample) {
-        float noise = noiseGen.nextValue();
+        float noise = noiseGen.nextValue() * noiseMix;
+
         float output = 0.0f;
+
         if (voice.note > 0) {
-            output = voice.render();
+            output = voice.render() + noise;
         }
+
         outputBufferLeft[sample] = output;
         if (outputBufferRight != nullptr) {
             outputBufferRight[sample] = output;
         }
     }
+
     protectYourEars(outputBufferLeft, sampleCount);
     protectYourEars(outputBufferRight, sampleCount);
 }
+
 void Synth::midiMessage(uint8_t data0, uint8_t data1, uint8_t data2)
 {
     switch (data0 & 0xF0) {
         // Note off
-    case 0x80:
-        noteOff(data1 & 0x7F);
-        break;
+        case 0x80:
+            noteOff(data1 & 0x7F);
+            break;
+
         // Note on
-    case 0x90: {
-        uint8_t note = data1 & 0x7F;
-        uint8_t velo = data2 & 0x7F;
-        if (velo > 0) {
-            noteOn(note, velo);
-        }
-        else {
-            noteOff(note);
-        }
-        break;
+        case 0x90: {
+            uint8_t note = data1 & 0x7F;
+            uint8_t velo = data2 & 0x7F;
+            if (velo > 0) {
+                noteOn(note, velo);
+            } else {
+                noteOff(note);
+            }
+            break;
         }
     }
 }
+
