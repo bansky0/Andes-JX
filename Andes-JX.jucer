@@ -8,6 +8,11 @@
               pluginCode="NRAN">
   <MAINGROUP id="YlH79P" name="AndesJX">
     <GROUP id="{4D135059-234F-12E2-FE03-2E96DC8381EB}" name="Source">
+      <FILE id="TD8Rts" name="Constants.h" compile="0" resource="0" file="Source/Constants.h"/>
+      <FILE id="l9cfg5" name="OscillatorPolyBLEP.cpp" compile="1" resource="0"
+            file="Source/OscillatorPolyBLEP.cpp"/>
+      <FILE id="QtF4sb" name="OscillatorPolyBLEP.h" compile="0" resource="0"
+            file="Source/OscillatorPolyBLEP.h"/>
       <FILE id="NFhMi3" name="NoiseGenerator.h" compile="0" resource="0"
             file="Source/NoiseGenerator.h"/>
       <FILE id="BQLd3z" name="Oscillator.h" compile="0" resource="0" file="Source/Oscillator.h"/>

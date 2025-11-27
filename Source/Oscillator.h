@@ -7,6 +7,66 @@
 
   ==============================================================================
 */
+
+#pragma once
+#include "OscillatorPolyBLEP.h"
+
+enum class WaveType
+{
+    Sine,
+    Saw,
+    Square,
+    Triangle
+};
+
+class Oscillator
+{
+public:
+    void prepare(double sampleRate)
+    {
+        sr = sampleRate;
+        polyblep.prepare(sampleRate);
+    }
+
+    void setFrequency(float freq)
+    {
+        frequency = freq;
+        polyblep.setFrequency(freq);
+    }
+
+    void setWaveType(WaveType type)
+    {
+        waveType = type;
+    }
+
+    float nextSample()
+    {
+        switch (waveType)
+        {
+        case WaveType::Sine:    return std::sin(phase += inc());
+        case WaveType::Saw:     return polyblep.saw();
+        case WaveType::Square:  return polyblep.square();
+        case WaveType::Triangle:return polyblep.triangle();
+        }
+        return 0.0f;
+    }
+
+private:
+    float frequency = 440.0f;
+    double sr = 48000.0;
+    WaveType waveType = WaveType::Saw;
+
+    OscillatorPolyBLEP polyblep;
+
+    float inc() const
+    {
+        return (float)(TWO_PI * frequency / sr);
+    }
+
+    float phase = 0.0f;
+};
+
+/*
 #pragma once
 #include <cmath>
 
@@ -76,3 +136,4 @@ class Oscillator
         float dsin;
         float dc;
 };
+*/

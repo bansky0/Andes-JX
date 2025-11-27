@@ -15,7 +15,13 @@ Synth::Synth()
 {
     sampleRate = 48000.0f; // originallly 44100.0f
 }
+void Synth::noteOn(int note, int velocity)
+{
+    voice.startNote(note);
+    voice.velocityGain = (velocity / 127.0f);
+}
 
+/*
 void Synth::noteOn(int note, int velocity)
 {
     voice.note = note;
@@ -24,16 +30,19 @@ void Synth::noteOn(int note, int velocity)
     voice.osc.period = sampleRate / freq;
     voice.osc.reset();
 }
+*/
 void Synth::noteOff(int note)
 {
     if (voice.note == note) {
-        voice.note = 0;
+        voice.stopNote();
+        //voice.note = 0;
     }
 }
 
 void Synth::allocateResources(double sampleRate_, int /*samplesPerBlock*/)
 {
     sampleRate = static_cast<float>(sampleRate_);
+    voice.osc.prepare(sampleRate);
 }
 void Synth::deallocateResources()
 {
