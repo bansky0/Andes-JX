@@ -43,7 +43,7 @@ struct Voice
         env.reset();
     }
 
-    float render(float noise)
+    float render(float input)
     {
         if (!env.isActive())
             return 0.0f;
@@ -51,7 +51,7 @@ struct Voice
         float oscSignal = osc.nextSample();
         float envValue = env.nextValue();
 
-        float mixed = oscSignal + noise;
+        float mixed = oscSignal + input;
 
         // Aplica ADSR + velocity
         return mixed * envValue * velocityGain;
