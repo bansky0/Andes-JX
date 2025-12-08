@@ -18,6 +18,10 @@ class Synth
 {
 public:
     Synth();
+    float envAttack;
+    float envDecay;
+    float envSustain;
+    float envRelease;
 
     void allocateResources(double sampleRate, int samplesPerBlock);
     void deallocateResources();

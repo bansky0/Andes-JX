@@ -28,6 +28,7 @@
       <FILE id="fkEGDa" name="Synth.h" compile="0" resource="0" file="Source/Synth.h"/>
       <FILE id="Vre7I0" name="Utils.h" compile="0" resource="0" file="Source/Utils.h"/>
       <FILE id="VVzX9U" name="Voice.h" compile="0" resource="0" file="Source/Voice.h"/>
+      <FILE id="rVTpjs" name="Envelope.h" compile="0" resource="0" file="Source/Envelope.h"/>
     </GROUP>
   </MAINGROUP>
   <MODULES>

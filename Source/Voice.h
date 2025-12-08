@@ -12,6 +12,7 @@
 
 //#include "Oscillator.h"
 #include "OscillatorPolyBLEP.h"
+#include "Envelope.h"
 
 struct Voice
 {
@@ -20,6 +21,7 @@ struct Voice
     float velocityGain = 0.997f;
 
     OscillatorPolyBLEP osc;
+    Envelope env;
 
     void startNote(int midiNote)
     {
@@ -38,38 +40,26 @@ struct Voice
     void reset()
     {
         stopNote();
+        env.reset();
     }
 
-    float render()
+    float render(float noise)
     {
-        if (note < 0)
+        if (!env.isActive())
             return 0.0f;
 
-        // Importante: asegurar que la frecuencia está seteada
-        //osc.setFrequency(freq);
+        float oscSignal = osc.nextSample();
+        float envValue = env.nextValue();
 
-        return velocityGain * osc.nextSample();
+        float mixed = oscSignal + noise;
+
+        // Aplica ADSR + velocity
+        return mixed * envValue * velocityGain;
     }
+
+    void release()
+    {
+        env.release();
+    }
+
 };
-
- /*
- struct Voice
- {
-     float saw;
-
-     int note;
-     Oscillator osc;
-     void reset()
-     {
-         note = 0;
-         osc.reset();
-         saw = 0.0f;
-     } 
-     float render()
-     {
-         float sample = osc.nextSample();
-         saw = saw * 0.997f - sample;
-         return saw;
-     }
- };
- */

@@ -17,25 +17,28 @@ Synth::Synth()
 }
 void Synth::noteOn(int note, int velocity)
 {
+    Envelope& env = voice.env;
+
+    // Configurar ADSR
+    env.attackMultiplier  = envAttack;
+    env.decayMultiplier   = envDecay;
+    env.sustainLevel      = envSustain;
+    env.releaseMultiplier = envRelease;
+
+    // Iniciar ataque
+    env.attack();
+
+    // Nota
     voice.startNote(note);
     voice.velocityGain = (velocity / 127.0f);
 }
 
-/*
-void Synth::noteOn(int note, int velocity)
-{
-    voice.note = note;
-    float freq = 440.0f * std::exp2(float(note - 69) / 12.0f);
-    voice.osc.amplitude = (velocity / 127.0f) * 0.5f;
-    voice.osc.period = sampleRate / freq;
-    voice.osc.reset();
-}
-*/
 void Synth::noteOff(int note)
 {
-    if (voice.note == note) {
-        voice.stopNote();
-        //voice.note = 0;
+    if (voice.note == note)
+    {
+        voice.env.release();
+        voice.note = -1;
     }
 }
 
@@ -63,16 +66,23 @@ void Synth::render(float** outputBuffers, int sampleCount)
 
         float output = 0.0f;
 
-        if (voice.note > 0) {
-            output = voice.render() + noise;
+        if (voice.env.isActive()) {
+            output = voice.render(noise);
         }
+        else
+            output = 0.0f;
 
         outputBufferLeft[sample] = output;
+
         if (outputBufferRight != nullptr) {
             outputBufferRight[sample] = output;
         }
     }
-
+    /*
+    if (!voice.env.isActive()) {
+        voice.env.reset();
+    }
+    */
     protectYourEars(outputBufferLeft, sampleCount);
     protectYourEars(outputBufferRight, sampleCount);
 }
