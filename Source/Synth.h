@@ -22,6 +22,10 @@ public:
     float envDecay;
     float envSustain;
     float envRelease;
+    float oscMix;
+    float detune;
+    float tune;
+    float pitchBend;
 
     void allocateResources(double sampleRate, int samplesPerBlock);
     void deallocateResources();

@@ -12,3 +12,4 @@
 
 static constexpr float PI = 3.14159265358979323846f;
 static constexpr float TWO_PI = 6.28318530717958647692f;
+static constexpr float PI_OVER_4 = 0.7853981634f;
