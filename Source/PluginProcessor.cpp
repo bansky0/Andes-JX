@@ -235,6 +235,8 @@ void AndesJXAudioProcessor::update()
     synth.envDecay =  std::exp(-inverseSampleRate * std::exp(5.5f - 0.075f * envDecayParam->get()));
     synth.envSustain = envSustainParam->get() / 100.0f;
     //synth.envDecay =  std::exp(std::log(SILENCE) / decaySamples);
+    synth.oscMix = oscMixParam->get() / 100.0f;
+    
 
     float envRelease = envReleaseParam->get();
     if (envRelease < 1.0f) {
@@ -247,6 +249,14 @@ void AndesJXAudioProcessor::update()
     float noiseMix = noiseParam->get() / 100.0f;
     noiseMix *= noiseMix;
     synth.noiseMix = noiseMix * 0.06f;
+    
+    float semi = oscTuneParam->get();
+    float cent = oscFineParam->get();
+    synth.detune = std::exp2((semi + 0.01f * cent) / 12.0f);
+    
+    float octave = octaveParam->get();
+    float tuning = tuningParam->get();
+    synth.tune = octave * 12.0f + tuning / 100.0f;
 }
 
 void AndesJXAudioProcessor::splitBufferByEvents(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
