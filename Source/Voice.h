@@ -32,6 +32,7 @@ struct Voice
         note = midiNote;
         freq = 440.0f * std::pow(2.0f, (note - 69) / 12.0f); // MIDI → Hz
         osc1.setFrequency(freq);
+        osc2.setFrequency(freq);
     }
 
     void stopNote()
@@ -57,7 +58,7 @@ struct Voice
         float sample2 = osc2.nextSample()*osc2Gain;
         float output = sample1- sample2 + input;
         float envelope = env.nextValue();
-        return output * envelope;
+        return output * envelope * velocityGain;
 }
 
     void release()
@@ -68,11 +69,7 @@ struct Voice
     void updatePanning()
     {
         float panning = std::clamp((note- 60.0f) / 24.0f,-1.0f, 1.0f);
-        panLeft = std::sin((PI/4.0f) * (1.0f- panning));
-        panRight = std::sin((PI/4.0f) * (1.0f + panning));
+        panLeft = std::sin(PI_OVER_4 * (1.0f- panning));
+        panRight = std::sin(PI_OVER_4 * (1.0f + panning));
     }
-    
-    
 };
-
-
