@@ -49,6 +49,7 @@ AndesJXAudioProcessor::AndesJXAudioProcessor()
     castParameter(apvts, ParameterID::tuning, tuningParam);
     castParameter(apvts, ParameterID::outputLevel, outputLevelParam);
     castParameter(apvts, ParameterID::polyMode, polyModeParam);
+    castParameter(apvts, ParameterID::stereoWidth, stereoWidthParam);
 
     createPrograms();
     setCurrentProgram(0);
@@ -234,9 +235,8 @@ void AndesJXAudioProcessor::update()
     synth.envAttack = std::exp(-inverseSampleRate * std::exp(5.5f - 0.075f * envAttackParam->get()));
     synth.envDecay =  std::exp(-inverseSampleRate * std::exp(5.5f - 0.075f * envDecayParam->get()));
     synth.envSustain = envSustainParam->get() / 100.0f;
+    synth.numVoices = (polyModeParam->getIndex() == 0) ? 1 : Synth::MAX_VOICES;
     //synth.envDecay =  std::exp(std::log(SILENCE) / decaySamples);
-    synth.oscMix = oscMixParam->get() / 100.0f;
-    
 
     float envRelease = envReleaseParam->get();
     if (envRelease < 1.0f) {
@@ -246,10 +246,15 @@ void AndesJXAudioProcessor::update()
         synth.envRelease = std::exp(-inverseSampleRate * std::exp(5.5f - 0.075f * envRelease));
     }
 
+    synth.oscMix = oscMixParam->get() / 100.0f;
+
     float noiseMix = noiseParam->get() / 100.0f;
     noiseMix *= noiseMix;
     synth.noiseMix = noiseMix * 0.06f;
     
+    float trim = 0.30f * (3.2f - synth.oscMix - 25.0f * synth.noiseMix);
+    synth.volumeTrim = juce::jlimit(0.0f, 1.2f, trim);
+
     float semi = oscTuneParam->get();
     float cent = oscFineParam->get();
     synth.detune = std::exp2((semi + 0.01f * cent) / 12.0f);
@@ -257,6 +262,12 @@ void AndesJXAudioProcessor::update()
     float octave = octaveParam->get();
     float tuning = tuningParam->get();
     synth.tune = octave * 12.0f + tuning / 100.0f;
+
+    synth.stereoWidth = stereoWidthParam->get() / 100.0f;
+
+    float gain = juce::Decibels::decibelsToGain(outputLevelParam->get());
+    synth.outputLevelSmoother.setTargetValue(gain);
+    //synth.outputLevel = juce::Decibels::decibelsToGain(outputLevelParam->get());
 }
 
 void AndesJXAudioProcessor::splitBufferByEvents(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
@@ -403,6 +414,13 @@ void AndesJXAudioProcessor::createPrograms()
 juce::AudioProcessorValueTreeState::ParameterLayout AndesJXAudioProcessor::createParameterLayout()
 {
     juce::AudioProcessorValueTreeState::ParameterLayout layout;
+    
+    layout.add(std::make_unique<juce::AudioParameterFloat>(
+        ParameterID::stereoWidth,
+        "Stereo Width",
+        juce::NormalisableRange<float>(0.0f, 100.0f, 1.0f),
+        50.0f, // Valor por defecto (totalmente)
+        juce::AudioParameterFloatAttributes().withLabel("%")));
 
     layout.add(std::make_unique<juce::AudioParameterChoice>(
         ParameterID::polyMode,
