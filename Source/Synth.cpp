@@ -51,7 +51,10 @@ void Synth::restartMonoVoice(int note, int velocity)
     voice.note = note;
     voice.released = false;
     voice.updatePanning(0);
-
+    /*
+    if (velocity >= 0)
+        voice.velocityGain = (velocity / 127.0f) * 0.5f;
+    */
     voice.osc1.setFrequency(freq * pitchBend);
     voice.osc2.setFrequency(freq * pitchBend * detune);
 }
@@ -172,6 +175,22 @@ void Synth::noteOn(int note, int velocity)
 {
     if (numVoices == 1)
     {
+        // Legato SOLO si aún hay una nota "held"
+        if (voices[0].note > 0)
+        {
+            shiftQueuedNotes();
+            restartMonoVoice(note, velocity);   // NO reinicia attack
+        }
+        else
+        {
+            startVoice(0, note, velocity);      // SÍ reinicia attack
+        }
+        return;
+    }
+
+    int v = findFreeVoice(note);
+    startVoice(v, note, velocity);
+        /*
         if (voices[0].env.isActive())
         {
             if (voices[0].note > 0)
@@ -191,10 +210,36 @@ void Synth::noteOn(int note, int velocity)
         int v = findFreeVoice(note);
         startVoice(v, note, velocity);
     }
+    */
 }
 
 void Synth::noteOff(int note)
 {
+    if (numVoices == 1)
+    {
+        // libera la voz 0 si es esa nota
+        if (voices[0].note == note)
+        {
+            if (sustainPedalPressed)
+                voices[0].note = SUSTAIN;
+            else
+            {
+                voices[0].release();
+                voices[0].note = 0; // clave para que el próximo noteOn NO sea legato
+            }
+
+            int queued = nextQueuedNote();
+            if (queued > 0)
+                restartMonoVoice(queued, -1);
+        }
+
+        // además, limpia cualquier nota en la cola
+        for (int v = 1; v < MAX_VOICES; ++v)
+            if (voices[v].note == note) voices[v].note = 0;
+
+        return;
+    }
+    /*
     if ((numVoices == 1) && (voices[0].note == note))
     {
         int queuedNote = nextQueuedNote();
@@ -203,7 +248,7 @@ void Synth::noteOff(int note)
             restartMonoVoice(queuedNote, -1);
         }
     }
-
+    */
     for (int v = 0; v < MAX_VOICES; v++) 
     {
         if (voices[v].note == note) 
