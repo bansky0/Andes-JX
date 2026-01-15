@@ -13,6 +13,7 @@
 #include <JuceHeader.h>
 #include "Voice.h"
 #include "NoiseGenerator.h"
+#include "Oscillator.h"
 
 class Synth
 {
@@ -30,6 +31,10 @@ public:
     float pitchBend{};
     float stereoWidth{};
     float volumeTrim{};
+    float velocitySensitivity = 0.0f;
+    bool ignoreVelocity = false;
+    float lfoRateHz = 5.0f;      
+    float lfoDepthSemis = 0.0f; 
     juce::LinearSmoothedValue<float> outputLevelSmoother;
 
     void allocateResources(double sampleRate, int samplesPerBlock);
@@ -42,9 +47,18 @@ public:
     int findFreeVoice(int note) const;
     float calcBaseFreq(int v, int note) const;
     void controlChange(uint8_t data1, uint8_t data2);
-    
-
     float noiseMix{};
+    void setLfoRateHz(float hz)
+    {
+        lfoRateHz = hz;
+        lfo.setFrequency(lfoRateHz / float(LFO_MAX));
+    }
+    
+    void setLfoDepthSemis(float semis)
+    {
+        lfoDepthSemis = semis;
+    }
+
 
 private:
     void noteOn(int note, int velocity);
@@ -60,4 +74,10 @@ private:
     std::array<Voice, MAX_VOICES> voices;
     NoiseGenerator noiseGen;
     juce::Random rng;
+    
+    Oscillator lfo;
+    int lfoCounter = 0;
+    static constexpr int LFO_MAX = 32;
+    float lfoValue = 0.0f;
+    float lfoPitchMul = 1.0f;
 };

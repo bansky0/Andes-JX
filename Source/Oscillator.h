@@ -43,13 +43,25 @@ public:
     {
         switch (waveType)
         {
-        case WaveType::Sine:    return std::sin(phase += inc());
-        case WaveType::Saw:     return polyblep.saw();
-        case WaveType::Square:  return polyblep.square();
-        case WaveType::Triangle:return polyblep.triangle();
+            case WaveType::Sine:
+            {
+                phase += inc();
+                if (phase >= TWO_PI) phase -= TWO_PI;
+                return std::sin(phase);
+            }
+            case WaveType::Saw:     return polyblep.saw();
+            case WaveType::Square:  return polyblep.square();
+            case WaveType::Triangle:return polyblep.triangle();
         }
         return 0.0f;
+        
     }
+    void reset()
+    {
+        phase = 0.0f;
+        polyblep.reset();
+    }
+
 
 private:
     float frequency = 440.0f;
