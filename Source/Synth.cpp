@@ -342,7 +342,8 @@ void Synth::render(float** outputBuffers, int sampleCount)
 
                 // PWM: pequeña modulación de pitch en semitonos
                 // Si pwmDepth = 0.01, modula ±0.01 semitonos
-                float pwmPitchMul = std::exp2((pwmDepth) / 12.0f);//std::exp2((lfoSine * pwmDepth) / 12.0f);
+                //float pwmPitchMul = std::exp2((pwmDepth) / 12.0f);//std::exp2((lfoSine * pwmDepth) / 12.0f);
+                const float pwmWidth = juce::jlimit(0.05f, 0.95f, 0.5f + lfoSine * pwmDepth);
                 /*
                 // Calcular moduladores separados
                 float vibratoMod = 1.0f + lfoSine * lfoDepthSemis / 12.0f;  // Para pitch
@@ -370,7 +371,12 @@ void Synth::render(float** outputBuffers, int sampleCount)
                             voice.osc1.setFrequency(voice.freq * pitchBend * vibratoPitchMul);
 
                             // osc2: vibrato + PWM (o solo PWM en modo PWM)
-                            voice.osc2.setFrequency(voice.freq * pitchBend * detune * vibratoPitchMul * pwmPitchMul);
+                            voice.osc2.setFrequency(voice.freq * pitchBend * detune * vibratoPitchMul);
+                            if (pwmDepth > 0.0f)
+                            {
+                                voice.osc2.setPulseWidth(pwmWidth);
+                            }
+                            //voice.osc2.setFrequency(voice.freq * pitchBend * detune * vibratoPitchMul * pwmPitchMul);
                             /*
                                 // osc1: solo vibrato (pitch)
                                 voice.osc1.setFrequency(voice.freq * pitchModulation);
@@ -398,7 +404,8 @@ void Synth::render(float** outputBuffers, int sampleCount)
 
             if (voice.env.isActive())
             {
-                float mono = voice.render(noise);
+                //float mono = voice.render(noise);
+                float mono = voice.render(noise, pwmDepth > 0.0f);
                 outL += mono * voice.panLeft;
                 outR += mono * voice.panRight;
             }

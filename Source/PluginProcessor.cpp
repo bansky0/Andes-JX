@@ -282,18 +282,23 @@ void AndesJXAudioProcessor::update()
     //actualizar LFO
     const float lfoNorm = lfoRateParam->get();          // 0..1
     const float lfoHz = std::exp(7.0f * lfoNorm - 4.0f);
-    synth.setLfoRateHz(lfoRateParam->get());
+    synth.setLfoRateHz(lfoHz);
 
     // Implementar lógica de vibrato/PWM
     float vibratoValue = vibratoParam->get(); // Asume que va de -100 a +100
 
-    // Calcular valores al cuadrado para ambos
+    // Calcular valores al cuadrado para vibrato en semitonos
     synth.lfoDepthSemis = vibratoValue * vibratoValue * 0.0002f; // vibrato
-    synth.pwmDepth = std::abs(vibratoValue) * 0.01f;
+    //synth.pwmDepth = std::abs(vibratoValue) * 0.01f;
     //synth.pwmDepth = vibratoValue * vibratoValue * 0.01f;      // PWM
     // Si el parámetro es negativo, usar PWM en lugar de vibrato
     if (vibratoValue < 0.0f) {
         synth.lfoDepthSemis = 0.0f;  // Apagar vibrato
+        synth.pwmDepth = std::abs(vibratoValue) * 0.01;
+    }
+    else
+    {
+        synth.pwmDepth = 0;
     }
     //synth.lfoDepthSemis = 0.02f * lfoDepthParam->get(); // 0..2 semitonos
     //synth.lfoDepthSemis = 2.0f; // medio semitono, solo para test

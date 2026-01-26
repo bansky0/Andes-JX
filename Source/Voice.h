@@ -59,11 +59,12 @@ struct Voice
         panRight = 0.707f;
     }
 
-    float render(float noise)
+    float render(float noise, bool usePwm)
     {
         // si se activa esta parte es el jx tradicional (sonido tradicional)
         float sample1 = osc1.nextSample();
-        float sample2 = osc2.nextSample() * osc2Gain;
+        //float sample2 = osc2.nextSample() * osc2Gain;
+        float sample2 = (usePwm ? osc2.squarePWM() : osc2.nextSample()) * osc2Gain;
         float output = sample1 - sample2 + noise;
         float envelope = env.nextValue();
         return output * envelope * velocityGain;
