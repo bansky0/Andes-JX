@@ -28,6 +28,7 @@ float OscillatorPolyBLEP::advance()
 float OscillatorPolyBLEP::polyBLEP(float t) const
 {   
     float dt = frequency / sampleRate;
+    dt = std::min(dt, 0.5f);
 
     // rising edge
     if (t < dt)
@@ -89,17 +90,6 @@ float OscillatorPolyBLEP::square()
 
     advance();
     return value;
-    /*
-    float t = phase;
-
-    float value = (t < 0.5f) ? 1.0f : -1.0f;
-
-    value += polyBLEP(t);
-    value -= polyBLEP(fmod(t + 0.5f, 1.0f));
-
-    advance();
-    return value;
-    */
 }
 
 float OscillatorPolyBLEP::triangle()
@@ -115,29 +105,33 @@ float OscillatorPolyBLEP::triangle()
 
     advance();
     return integrator;
-    /*
+}
+
+float OscillatorPolyBLEP::squarePWM()
+{
     float t = phase;
-    float value = 2.0f * t - 1.0f;
-    value -= polyBLEP(t);
 
-    // Integrar la onda saw para obtener triangle
-    integrator += 4.0f * frequency / sampleRate * value;
+    // Onda cuadrada con ancho de pulso variable
+    float value = (t < pulseWidth) ? 1.0f : -1.0f;
 
-    // Limitar para evitar drift
-    if (integrator > 1.0f) integrator = 1.0f;
-    if (integrator < -1.0f) integrator = -1.0f;
+    // PolyBLEP en el flanco ascendente (t = 0)
+    value += polyBLEP(t);
+
+    // PolyBLEP en el flanco descendente (t = width)
+    float t2 = t + (1.0f - pulseWidth);
+    if (t2 >= 1.0f) t2 -= 1.0f;
+    value -= polyBLEP(t2);
+
+    value -= (2.0f * pulseWidth - 1.0f);
 
     advance();
-    return integrator;
-    */
-    /*
-    float sq = square();
-    float k = frequency / sampleRate;
+    return value;
+}
 
-    integrator += (sq - integrator) * k;
-
-    return integrator * 2.0f;
-    */
+void OscillatorPolyBLEP::syncPhase(const OscillatorPolyBLEP& other)
+{
+    // Copiar la fase del otro oscilador para sincronizar
+    phase = other.phase;
 }
 
 float OscillatorPolyBLEP::nextSample()

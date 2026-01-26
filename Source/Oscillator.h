@@ -16,12 +16,16 @@ enum class WaveType
     Sine,
     Saw,
     Square,
+    SquarePWM,
     Triangle
 };
 
 class Oscillator
 {
 public:
+    //float period = 0.0f;
+    float amplitude = 1.0f;
+
     void prepare(double sampleRate)
     {
         sr = sampleRate;
@@ -39,6 +43,16 @@ public:
         waveType = type;
     }
 
+    void setPulseWidth(float width)
+    {
+        polyblep.setPulseWidth(width);
+    }
+
+    void syncPhase(const Oscillator& other)
+    {
+        polyblep.syncPhase(other.polyblep);
+    }
+
     float nextSample()
     {
         switch (waveType)
@@ -51,6 +65,8 @@ public:
             }
             case WaveType::Saw:     return polyblep.saw();
             case WaveType::Square:  return polyblep.square();
+            case WaveType::SquarePWM:
+                return polyblep.squarePWM();
             case WaveType::Triangle:return polyblep.triangle();
         }
         return 0.0f;
@@ -64,6 +80,7 @@ public:
 
 
 private:
+    float phase = 0.0f;
     float frequency = 440.0f;
     double sr = 48000.0;
     WaveType waveType = WaveType::Saw;
@@ -74,8 +91,6 @@ private:
     {
         return (float)(TWO_PI * frequency / sr);
     }
-
-    float phase = 0.0f;
 };
 
 /*

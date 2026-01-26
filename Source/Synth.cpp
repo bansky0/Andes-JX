@@ -41,7 +41,7 @@ void Synth::shiftQueuedNotes()
     }
 }
 
-void Synth::restartMonoVoice(int note, int velocity)
+void Synth::restartMonoVoice(int note, int /*velocity*/)
 {
     Voice& voice = voices[0];
 
@@ -159,6 +159,12 @@ void Synth::startVoice(int v, int note, int velocity)
 
     voice.osc2.setFrequency(freq * pitchBend * detune);
     voice.osc2.reset();
+
+    // Sincronizar fase en modo PWM
+    if (lfoDepthSemis == 0.0f && pwmDepth > 0.0f) {
+        voice.osc2.syncPhase(voice.osc1);  // Sincronizar con osc1
+    }
+
     voice.osc2Gain = oscMix;
     //voice.osc2Gain = voice.velocityGain * oscMix;
 
@@ -283,7 +289,7 @@ void Synth::allocateResources(double sampleRate_, int /*samplesPerBlock*/)
     
     lfo.prepare(sampleRate_);
     lfo.setWaveType(WaveType::Sine);
-    lfo.setFrequency(lfoRateHz / float(LFO_MAX)); 
+    lfo.setFrequency(lfoRateHz); 
     lfo.reset();
     lfoCounter = 0;
     lfoPitchMul = 1.0f;
@@ -331,17 +337,52 @@ void Synth::render(float** outputBuffers, int sampleCount)
             {
                 lfoCounter = 0;
                 const float lfoSine = lfo.nextSample(); // -1..+1
+                // Convertir vibrato a multiplicador de frecuencia
+                float vibratoPitchMul = std::exp2((lfoSine * lfoDepthSemis) / 12.0f);
 
+                // PWM: pequeña modulación de pitch en semitonos
+                // Si pwmDepth = 0.01, modula ±0.01 semitonos
+                float pwmPitchMul = std::exp2((pwmDepth) / 12.0f);//std::exp2((lfoSine * pwmDepth) / 12.0f);
+                /*
+                // Calcular moduladores separados
+                float vibratoMod = 1.0f + lfoSine * lfoDepthSemis / 12.0f;  // Para pitch
+                float pwmMod = 0.5f + lfoSine * pwmDepth;  // Para pulse width (0.5 ± pwmDepth)
+
+                // Convertir vibrato a multiplicador de frecuencia
+                float vibratoPitchMul = std::exp2(lfoSine * lfoDepthSemis / 12.0f);
+
+                const float pitchModulation = pitchBend * vibratoPitchMul;
+                */
+                /*
                 // depth en semitonos -> multiplicador musical
                 lfoPitchMul = std::exp2((lfoSine * lfoDepthSemis) / 12.0f);
+
+                float pwmAmount = 0.3f;  // Cantidad de modulación (0.0 a 0.45)
+                const float pitchModulation = pitchBend * lfoPitchMul;
+                */
                 // actualizar frecuencias de voces activas SOLO cuando el LFO cambia
                 for (int v = 0; v < MAX_VOICES; ++v)
                     {
                         Voice& voice = voices[v];
                         if (voice.env.isActive())
                             {
-                                voice.osc1.setFrequency(voice.freq * pitchBend * lfoPitchMul);
-                                voice.osc2.setFrequency(voice.freq * pitchBend * detune * lfoPitchMul);
+                            // osc1: solo vibrato (o sin modulación en modo PWM)
+                            voice.osc1.setFrequency(voice.freq * pitchBend * vibratoPitchMul);
+
+                            // osc2: vibrato + PWM (o solo PWM en modo PWM)
+                            voice.osc2.setFrequency(voice.freq * pitchBend * detune * vibratoPitchMul * pwmPitchMul);
+                            /*
+                                // osc1: solo vibrato (pitch)
+                                voice.osc1.setFrequency(voice.freq * pitchModulation);
+                                // osc2: vibrato + PWM
+                                voice.osc2.setFrequency(voice.freq * pitchModulation * detune);
+                                voice.osc2.setPulseWidth(pwmMod);
+                            */
+                                /*
+                                voice.osc2.setFrequency(voice.freq * pitchModulation* detune);
+
+                                voice.osc2.setPulseWidth(pulseWidth);
+                                */
                             }
                     }
             }
@@ -450,4 +491,18 @@ void Synth::midiMessage(uint8_t data0, uint8_t data1, uint8_t data2)
     }
 }
 
+void Synth::setLfoRateHz(float hz)
+{
+    lfoRateHz = hz;
+    lfo.setFrequency(hz);
+}
 
+void Synth::setLfoDepthSemis(float semis)
+{
+    lfoDepthSemis = semis;
+}
+
+void Synth::setPwmDepth(float depth)
+{
+    pwmDepth = depth;
+}

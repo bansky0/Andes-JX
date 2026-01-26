@@ -9,6 +9,7 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 #include "Utils.h"
+#include "Constants.h"
 
 //==============================================================================
 AndesJXAudioProcessor::AndesJXAudioProcessor()
@@ -228,14 +229,14 @@ void AndesJXAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
 void AndesJXAudioProcessor::update()
 {
     float sampleRate = float(getSampleRate());
-    float inverseSampleRate = 1.0 / sampleRate;
+    float inverseSampleRate = 1.0f / sampleRate;
     //float decayTime = envDecayParam->get() / 100.0f * 5.0f;
     //float decaySamples = sampleRate * decayTime;
 
     synth.envAttack = std::exp(-inverseSampleRate * std::exp(5.5f - 0.075f * envAttackParam->get()));
     synth.envDecay =  std::exp(-inverseSampleRate * std::exp(5.5f - 0.075f * envDecayParam->get()));
     synth.envSustain = envSustainParam->get() / 100.0f;
-    synth.numVoices = (polyModeParam->getIndex() == 0) ? 1 : Synth::MAX_VOICES;
+    synth.numVoices = (polyModeParam->getIndex() == 0) ? 1 : MAX_VOICES;
     //synth.envDecay =  std::exp(std::log(SILENCE) / decaySamples);
 
     float envRelease = envReleaseParam->get();
@@ -279,9 +280,23 @@ void AndesJXAudioProcessor::update()
     }
     
     //actualizar LFO
+    const float lfoNorm = lfoRateParam->get();          // 0..1
+    const float lfoHz = std::exp(7.0f * lfoNorm - 4.0f);
     synth.setLfoRateHz(lfoRateParam->get());
+
+    // Implementar lógica de vibrato/PWM
+    float vibratoValue = vibratoParam->get(); // Asume que va de -100 a +100
+
+    // Calcular valores al cuadrado para ambos
+    synth.lfoDepthSemis = vibratoValue * vibratoValue * 0.0002f; // vibrato
+    synth.pwmDepth = std::abs(vibratoValue) * 0.01f;
+    //synth.pwmDepth = vibratoValue * vibratoValue * 0.01f;      // PWM
+    // Si el parámetro es negativo, usar PWM en lugar de vibrato
+    if (vibratoValue < 0.0f) {
+        synth.lfoDepthSemis = 0.0f;  // Apagar vibrato
+    }
     //synth.lfoDepthSemis = 0.02f * lfoDepthParam->get(); // 0..2 semitonos
-    synth.lfoDepthSemis = 2.0f; // medio semitono, solo para test
+    //synth.lfoDepthSemis = 2.0f; // medio semitono, solo para test
 
 
 

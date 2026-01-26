@@ -89,7 +89,7 @@ struct Voice
         env.release();
     }
     
-    void updatePanning(int voiceIndex)
+    void updatePanning(int /*voiceIndex*/)
     {
         // 1. "t" define qué tanto efecto estéreo aplicamos (0 en graves, 1 en agudos)
     // Notas bajas ( < 40) estarán en el centro (mono).
