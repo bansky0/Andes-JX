@@ -33,9 +33,15 @@ public:
     float volumeTrim{};
     float velocitySensitivity = 0.0f;
     bool ignoreVelocity = false;
+    
     float lfoRateHz = 5.0f;      
     float lfoDepthSemis = 0.0f;
     float pwmDepth = 0.0f;
+    
+    int glideMode = 0;
+    float glideRate = 1.0f;
+    float glideBend = 0.0f;
+
     juce::LinearSmoothedValue<float> outputLevelSmoother;
 
     void allocateResources(double sampleRate, int samplesPerBlock);
@@ -61,6 +67,10 @@ private:
     void shiftQueuedNotes();
     int nextQueuedNote();
 
+    bool isPlayingLegatoStyle() const;
+    int lastNote = 0;
+
+
     bool sustainPedalPressed{};
     int queuedVelocity[MAX_VOICES]{};
     
@@ -73,4 +83,7 @@ private:
     int lfoCounter = 0;
     float lfoValue = 0.0f;
     float lfoPitchMul = 1.0f;
+    float modWheel = 0.0f;
+
+
 };

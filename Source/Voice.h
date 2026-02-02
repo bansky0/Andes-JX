@@ -23,6 +23,11 @@ struct Voice
     float panLeft, panRight;
     float randomPan = 0.0f; // [-1..1]
     float stereoWidth = 1.0f;
+    float freqCurrent = 0.0f;  // frecuencia “con glide” (la que realmente suena)
+    float freqTarget  = 0.0f;  // objetivo (la nota nueva)
+    float glideRateThisNote = 1.0f; // 1.0 = sin glide
+
+    
 
     //int age = 0;          // contador simple
     bool released = false; // flag simple
@@ -30,6 +35,13 @@ struct Voice
     OscillatorPolyBLEP osc1;
     OscillatorPolyBLEP osc2;
     Envelope env;
+    
+/*    inline void updateLFO()
+{
+    freqCurrent += glideRate * (freqTarget - freqCurrent);
+    
+}
+*/
 
     void startNote(int midiNote)
     {
@@ -37,11 +49,12 @@ struct Voice
         released = false;
         //freq = 440.0f * std::pow(2.0f, (note - 69) / 12.0f); // MIDI → Hz
     }
-
     void stopNote()
     {
         note = -1;
         freq = 0.0f;
+        freqCurrent = 0.0f;
+        freqTarget  = 0.0f;
         released = false;
     }
 

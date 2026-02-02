@@ -14,7 +14,9 @@
 
 Synth::Synth()
 {
-    sampleRate = 48000.0f; // originallly 44100.0f
+    sampleRate = 48000.0f; // originally 44100.0f
+
+
 }
 
 int Synth::nextQueuedNote()
@@ -31,6 +33,7 @@ int Synth::nextQueuedNote()
         return note;
     }
     return 0;
+    
 }
 
 void Synth::shiftQueuedNotes()
@@ -45,19 +48,36 @@ void Synth::restartMonoVoice(int note, int /*velocity*/)
 {
     Voice& voice = voices[0];
 
-    float freq = calcBaseFreq(0, note);
+    const float freq = calcBaseFreq(0, note);
+
+    // actualizar nota base
     voice.freq = freq;
+    voice.freqTarget = freq;
+
+
+    
+    
+ /*   
+    // NO reiniciamos freqCurrent si glide está activo
+    if (glideTimeSeconds <= 0.0f)
+    {
+        voice.freqCurrent = freq;
+    }
+
+   */ 
+    
+    
+    
+    
+    
+    // comportamiento legato correcto
     voice.env.level += SILENCE + SILENCE;
     voice.note = note;
     voice.released = false;
     voice.updatePanning(0);
-    /*
-    if (velocity >= 0)
-        voice.velocityGain = (velocity / 127.0f) * 0.5f;
-    */
-    voice.osc1.setFrequency(freq * pitchBend);
-    voice.osc2.setFrequency(freq * pitchBend * detune);
+
 }
+
 
 void Synth::controlChange(uint8_t data1, uint8_t data2)
 {
@@ -73,12 +93,19 @@ void Synth::controlChange(uint8_t data1, uint8_t data2)
         }
         break;
         // Sustain pedal
-    case 0x40:
+        
+        case 0x40:
         sustainPedalPressed = (data2 >= 64);
         if (!sustainPedalPressed) { // add this
             noteOff(SUSTAIN);
         }
         break;
+        
+        // Mod wheel (CC1)
+        case 0x01: 
+        modWheel = 0.000005f * float(data2 * data2);
+        break;
+
     }
 }
 
@@ -137,28 +164,56 @@ int Synth::findFreeVoice(int note) const
     return best;
 }
 
+
+
 void Synth::startVoice(int v, int note, int velocity)
 {
     Voice& voice = voices[v];
+    
+    // 1) Detecta legato ANTES de startNote()
+    const bool wasLegato = isPlayingLegatoStyle();
+
+    // 2) Marca la nota como activa
+    voice.startNote(note);
     voice.randomPan = rng.nextFloat() * 2.0f - 1.0f;
     voice.stereoWidth = stereoWidth;
-    voice.startNote(note);
     voice.updatePanning(v);
-
-    //float freq = 440.0f * std::exp2((float(note - 69) + tune) / 12.0f);
+    
     const float freq = calcBaseFreq(v, note);
-    voice.freq = freq;
+    voice.freqTarget = freq;
+    
+    
+    // 3) Decide si debe hacer glide según modo
+    bool shouldGlide = false;
+    if (glideMode == 2) shouldGlide = true;           // Always
+    else if (glideMode == 1) shouldGlide = wasLegato; // Legato
+    // glideMode == 0 => Off
+
+    voice.glideRateThisNote = shouldGlide ? glideRate : 1.0f;
+
+    // 4) Punto de arranque
+    if (!shouldGlide || lastNote <= 0)
+        {
+            voice.freqCurrent = freq; // sin glide: cae directo
+        }
+        else
+        {
+            const int noteDistance = note - lastNote;
+            const float startSemis = float(noteDistance) - glideBend;
+            voice.freqCurrent = freq * std::pow(1.059463094359f, -startSemis);
+        }
+        
+        lastNote = note;
+        
+        // osciladores arrancan con freqCurrent (como ya tienes)
+        voice.osc1.setFrequency(voice.freqCurrent * pitchBend);
+        voice.osc1.reset();
+        voice.osc2.setFrequency(voice.freqCurrent * pitchBend * detune);
+        voice.osc2.reset();
     
     float vel = 0.004f * float((velocity + 64) * (velocity + 64))- 8.0f;
     voice.velocityGain = 0.01f * vel;
     
-
-    // osc1 / osc2: PolyBLEP usa frecuencia (no period)
-    voice.osc1.setFrequency(freq * pitchBend);
-    voice.osc1.reset();
-
-    voice.osc2.setFrequency(freq * pitchBend * detune);
-    voice.osc2.reset();
 
     // Sincronizar fase en modo PWM
     if (lfoDepthSemis == 0.0f && pwmDepth > 0.0f) {
@@ -166,8 +221,6 @@ void Synth::startVoice(int v, int note, int velocity)
     }
 
     voice.osc2Gain = oscMix;
-    //voice.osc2Gain = voice.velocityGain * oscMix;
-
     Envelope& env = voice.env;
 
     // Configurar ADSR
@@ -179,6 +232,9 @@ void Synth::startVoice(int v, int note, int velocity)
     // Iniciar ataque
     env.attack();
 }
+
+
+
 
 void Synth::noteOn(int note, int velocity)
 {
@@ -223,6 +279,8 @@ void Synth::noteOn(int note, int velocity)
     }
     */
 }
+
+
 
 void Synth::noteOff(int note)
 {
@@ -276,6 +334,9 @@ void Synth::noteOff(int note)
     }
 }
 
+
+
+
 void Synth::allocateResources(double sampleRate_, int /*samplesPerBlock*/)
 {
     sampleRate = static_cast<float>(sampleRate_);
@@ -295,10 +356,17 @@ void Synth::allocateResources(double sampleRate_, int /*samplesPerBlock*/)
     lfoPitchMul = 1.0f;
 
 }
+
+
 void Synth::deallocateResources()
 {
     
 }
+
+
+
+
+
 void Synth::reset()
 {
     for (int v = 0; v < MAX_VOICES; ++v) 
@@ -308,92 +376,73 @@ void Synth::reset()
     noiseGen.reset();
     pitchBend = 1.0f;
     sustainPedalPressed = false;
+    modWheel = 0.0f;
+    lastNote = 0;
+
 }
+
+
+
+
+
 void Synth::render(float** outputBuffers, int sampleCount)
 {
-    float* outputBufferLeft = outputBuffers[0];
+    float* outputBufferLeft  = outputBuffers[0];
     float* outputBufferRight = outputBuffers[1];
 
     // 1) Pre-update por voz (1 vez por bloque)
     for (int v = 0; v < MAX_VOICES; ++v)
     {
         Voice& voice = voices[v];
-
         if (voice.env.isActive())
         {
-            voice.stereoWidth = stereoWidth;   // <- update real-time
+            voice.stereoWidth = stereoWidth;
             voice.updatePanning(v);
-            voice.osc1.setFrequency(voice.freq * pitchBend * lfoPitchMul);
-            voice.osc2.setFrequency(voice.freq * pitchBend * detune * lfoPitchMul);
 
+            voice.osc1.setFrequency(voice.freqCurrent * pitchBend * lfoPitchMul);
+            voice.osc2.setFrequency(voice.freqCurrent * pitchBend * detune * lfoPitchMul);
         }
     }
 
     // 2) Render samples
-    for (int sample = 0; sample < sampleCount; ++sample) 
+    for (int sample = 0; sample < sampleCount; ++sample)
     {
         // ---- LFO update cada 32 samples ----
         if (++lfoCounter >= LFO_MAX)
+        {
+            lfoCounter = 0;
+            const float lfoSine = lfo.nextSample(); // -1..+1
+
+            const float modWheelSemis = modWheel * 12.0f;
+            const float totalVibratoSemis = lfoDepthSemis + modWheelSemis;
+            const float vibratoPitchMul = std::exp2((lfoSine * totalVibratoSemis) / 12.0f);
+
+            lfoPitchMul = vibratoPitchMul;
+
+            const float totalPwmDepth = juce::jlimit(0.0f, 0.45f, pwmDepth);
+            const float pwmWidth = juce::jlimit(0.05f, 0.95f, 0.5f + lfoSine * totalPwmDepth);
+
+            // actualizar voces activas SOLO cuando el LFO cambia
+            for (int v = 0; v < MAX_VOICES; ++v)
             {
-                lfoCounter = 0;
-                const float lfoSine = lfo.nextSample(); // -1..+1
-                // Convertir vibrato a multiplicador de frecuencia
-                float vibratoPitchMul = std::exp2((lfoSine * lfoDepthSemis) / 12.0f);
+                Voice& voice = voices[v];
+                if (!voice.env.isActive())
+                    continue;
 
-                // PWM: pequeña modulación de pitch en semitonos
-                // Si pwmDepth = 0.01, modula ±0.01 semitonos
-                //float pwmPitchMul = std::exp2((pwmDepth) / 12.0f);//std::exp2((lfoSine * pwmDepth) / 12.0f);
-                const float pwmWidth = juce::jlimit(0.05f, 0.95f, 0.5f + lfoSine * pwmDepth);
-                /*
-                // Calcular moduladores separados
-                float vibratoMod = 1.0f + lfoSine * lfoDepthSemis / 12.0f;  // Para pitch
-                float pwmMod = 0.5f + lfoSine * pwmDepth;  // Para pulse width (0.5 ± pwmDepth)
+                // 1) glide one-pole (libro)
+                voice.freqCurrent += voice.glideRateThisNote * (voice.freqTarget - voice.freqCurrent);
 
-                // Convertir vibrato a multiplicador de frecuencia
-                float vibratoPitchMul = std::exp2(lfoSine * lfoDepthSemis / 12.0f);
+                // 2) aplicar a osciladores
+                voice.osc1.setFrequency(voice.freqCurrent * pitchBend * vibratoPitchMul);
+                voice.osc2.setFrequency(voice.freqCurrent * pitchBend * detune * vibratoPitchMul);
 
-                const float pitchModulation = pitchBend * vibratoPitchMul;
-                */
-                /*
-                // depth en semitonos -> multiplicador musical
-                lfoPitchMul = std::exp2((lfoSine * lfoDepthSemis) / 12.0f);
-
-                float pwmAmount = 0.3f;  // Cantidad de modulación (0.0 a 0.45)
-                const float pitchModulation = pitchBend * lfoPitchMul;
-                */
-                // actualizar frecuencias de voces activas SOLO cuando el LFO cambia
-                for (int v = 0; v < MAX_VOICES; ++v)
-                    {
-                        Voice& voice = voices[v];
-                        if (voice.env.isActive())
-                            {
-                            // osc1: solo vibrato (o sin modulación en modo PWM)
-                            voice.osc1.setFrequency(voice.freq * pitchBend * vibratoPitchMul);
-
-                            // osc2: vibrato + PWM (o solo PWM en modo PWM)
-                            voice.osc2.setFrequency(voice.freq * pitchBend * detune * vibratoPitchMul);
-                            if (pwmDepth > 0.0f)
-                            {
-                                voice.osc2.setPulseWidth(pwmWidth);
-                            }
-                            //voice.osc2.setFrequency(voice.freq * pitchBend * detune * vibratoPitchMul * pwmPitchMul);
-                            /*
-                                // osc1: solo vibrato (pitch)
-                                voice.osc1.setFrequency(voice.freq * pitchModulation);
-                                // osc2: vibrato + PWM
-                                voice.osc2.setFrequency(voice.freq * pitchModulation * detune);
-                                voice.osc2.setPulseWidth(pwmMod);
-                            */
-                                /*
-                                voice.osc2.setFrequency(voice.freq * pitchModulation* detune);
-
-                                voice.osc2.setPulseWidth(pulseWidth);
-                                */
-                            }
-                    }
+                // 3) PWM (si aplica)
+                if (pwmDepth > 0.0f)
+                    voice.osc2.setPulseWidth(pwmWidth);
             }
+        }
 
-        float noise = noiseGen.nextValue() * noiseMix;
+        const float noise = noiseGen.nextValue() * noiseMix;
 
         float outL = 0.0f;
         float outR = 0.0f;
@@ -401,11 +450,9 @@ void Synth::render(float** outputBuffers, int sampleCount)
         for (int v = 0; v < MAX_VOICES; ++v)
         {
             Voice& voice = voices[v];
-
             if (voice.env.isActive())
             {
-                //float mono = voice.render(noise);
-                float mono = voice.render(noise, pwmDepth > 0.0f);
+                const float mono = voice.render(noise, pwmDepth > 0.0f);
                 outL += mono * voice.panLeft;
                 outR += mono * voice.panRight;
             }
@@ -417,15 +464,13 @@ void Synth::render(float** outputBuffers, int sampleCount)
         outL = driveL / (1.0f + std::abs(driveL));
         outR = driveR / (1.0f + std::abs(driveR));
 
-        float gain = outputLevelSmoother.getNextValue();
-
+        const float gain = outputLevelSmoother.getNextValue();
         outL *= gain;
         outR *= gain;
 
-        
         if (outputBufferRight != nullptr)
         {
-            outputBufferLeft[sample] = outL;
+            outputBufferLeft[sample]  = outL;
             outputBufferRight[sample] = outR;
         }
         else
@@ -433,27 +478,30 @@ void Synth::render(float** outputBuffers, int sampleCount)
             outputBufferLeft[sample] = 0.5f * (outL + outR);
         }
     }
-        // 3) Limpieza de voces inactivas (1 vez por bloque)
-        for (int v = 0; v < MAX_VOICES; ++v)
+
+    // 3) Limpieza de voces inactivas (1 vez por bloque)
+    for (int v = 0; v < MAX_VOICES; ++v)
+    {
+        Voice& voice = voices[v];
+
+        if (numVoices == 1 && v > 0)
+            continue;
+
+        if (!voice.env.isActive())
         {
-            Voice& voice = voices[v];
-
-            if (numVoices == 1 && v > 0)
-                continue;
-
-            if (!voice.env.isActive())
-            {
-                //Resetear envelope cuando ya murio
-                voice.env.reset();
-                voice.note = -1; // opcional: marca voz libre
-                voice.released = false;
-                voice.randomPan = 0.0f;
-            }
+            voice.env.reset();
+            voice.note = -1;
+            voice.released = false;
+            voice.randomPan = 0.0f;
         }
-       
+    }
+
     protectYourEars(outputBufferLeft, sampleCount);
     protectYourEars(outputBufferRight, sampleCount);
 }
+
+
+
 
 void Synth::midiMessage(uint8_t data0, uint8_t data1, uint8_t data2)
 {
@@ -485,8 +533,9 @@ void Synth::midiMessage(uint8_t data0, uint8_t data1, uint8_t data2)
                 Voice& voice = voices[v];
                 if (voice.env.isActive())
                 {
-                    voice.osc1.setFrequency(voice.freq * pitchBend);
-                    voice.osc2.setFrequency(voice.freq * pitchBend * detune);
+                    voice.osc1.setFrequency(voice.freqCurrent * pitchBend * lfoPitchMul);
+                    voice.osc2.setFrequency(voice.freqCurrent * pitchBend * detune * lfoPitchMul);
+
                 }
             }
             break;
@@ -498,18 +547,35 @@ void Synth::midiMessage(uint8_t data0, uint8_t data1, uint8_t data2)
     }
 }
 
+
+
 void Synth::setLfoRateHz(float hz)
 {
     lfoRateHz = hz;
     lfo.setFrequency(hz);
 }
 
+
+
 void Synth::setLfoDepthSemis(float semis)
 {
     lfoDepthSemis = semis;
 }
 
+
+
 void Synth::setPwmDepth(float depth)
 {
     pwmDepth = depth;
+}
+
+
+bool Synth::isPlayingLegatoStyle() const
+{
+    int held = 0;
+    for (int i = 0; i < MAX_VOICES; ++i)
+    {
+        if (voices[i].note > 0) { held += 1; }
+    }
+    return held > 0;
 }
