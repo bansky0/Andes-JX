@@ -173,7 +173,7 @@ void AndesJXAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBloc
 
 void AndesJXAudioProcessor::releaseResources()
 {
-    synth.deallocateResources();
+    //synth.deallocateResources();
 }
 
 void AndesJXAudioProcessor::reset()
@@ -310,7 +310,7 @@ void AndesJXAudioProcessor::update()
     // Si el parámetro es negativo, usar PWM en lugar de vibrato
     if (vibratoValue < 0.0f) {
         synth.lfoDepthSemis = 0.0f;  // Apagar vibrato
-        synth.pwmDepth = std::abs(vibratoValue) * 0.01;
+        synth.pwmDepth = std::abs(vibratoValue) * 0.01f;
     }
     else
     {

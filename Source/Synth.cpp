@@ -18,7 +18,7 @@ Synth::Synth()
 
 
 }
-
+/*
 int Synth::nextQueuedNote()
 {
     int held = 0;
@@ -35,7 +35,8 @@ int Synth::nextQueuedNote()
     return 0;
     
 }
-
+*/
+/*
 void Synth::shiftQueuedNotes()
 {
     for (int tmp = MAX_VOICES - 1; tmp > 0; tmp--) {
@@ -43,7 +44,7 @@ void Synth::shiftQueuedNotes()
         //voices[tmp].release();
     }
 }
-
+*/
 void Synth::restartMonoVoice(int note, int /*velocity*/)
 {
     Voice& voice = voices[0];
@@ -54,30 +55,38 @@ void Synth::restartMonoVoice(int note, int /*velocity*/)
     voice.freq = freq;
     voice.freqTarget = freq;
 
+    const bool wasLegato = true;
 
-    
-    
- /*   
-    // NO reiniciamos freqCurrent si glide está activo
-    if (glideTimeSeconds <= 0.0f)
+    bool shouldGlide = false;
+    if (glideMode == 2) shouldGlide = true;           // Always
+    else if (glideMode == 1) shouldGlide = wasLegato; // Legato
+    // glideMode==0 => Off
+
+    voice.glideRateThisNote = shouldGlide ? glideRate : 1.0f;
+
+    // Arranque de frecuencia
+    if (!shouldGlide || lastNote < 0)
     {
         voice.freqCurrent = freq;
     }
+    else
+    {
+        const int noteDistance = note - lastNote;
+        const float startSemis = float(noteDistance) - glideBend;
+        voice.freqCurrent = freq * std::pow(1.059463094359f, -startSemis);
+    }
+    lastNote = note;
 
-   */ 
-    
-    
-    
-    
-    
-    // comportamiento legato correcto
-    voice.env.level += SILENCE + SILENCE;
+    voice.osc1.setFrequency(voice.freqCurrent * pitchBend * lfoPitchMul);
+    voice.osc2.setFrequency(voice.freqCurrent * pitchBend * detune * lfoPitchMul);
+
+    // legato = NO retrigger envelope
+
+    //voice.env.level += SILENCE + SILENCE;
     voice.note = note;
     voice.released = false;
     voice.updatePanning(0);
-
 }
-
 
 void Synth::controlChange(uint8_t data1, uint8_t data2)
 {
@@ -105,7 +114,6 @@ void Synth::controlChange(uint8_t data1, uint8_t data2)
         case 0x01: 
         modWheel = 0.000005f * float(data2 * data2);
         break;
-
     }
 }
 
@@ -192,7 +200,7 @@ void Synth::startVoice(int v, int note, int velocity)
     voice.glideRateThisNote = shouldGlide ? glideRate : 1.0f;
 
     // 4) Punto de arranque
-    if (!shouldGlide || lastNote <= 0)
+    if (!shouldGlide || lastNote < 0)
         {
             voice.freqCurrent = freq; // sin glide: cae directo
         }
@@ -240,6 +248,30 @@ void Synth::noteOn(int note, int velocity)
 {
     if (ignoreVelocity) { velocity = 80; }
 
+    const bool wasLegato = legatoOnThisNoteOn(note);
+
+    pushKey(note);
+
+    if (numVoices == 1)
+    {
+        if (!voices[0].env.isActive() || !wasLegato)
+        {
+            // primer ataque (o no-legato): retrigger normal
+            startVoice(0, note, velocity);
+        }
+        else
+        {
+            // legato mono: no attack, solo cambio de nota (+glide)
+            restartMonoVoice(note, velocity);
+        }
+        return;
+    }
+
+    // --- POLY ---
+
+    int v = findFreeVoice(note);
+    startVoice(v, note, velocity);
+    /*
     if (numVoices == 1)
     {
         // Legato SOLO si aún hay una nota "held"
@@ -254,9 +286,9 @@ void Synth::noteOn(int note, int velocity)
         }
         return;
     }
+    */
 
-    int v = findFreeVoice(note);
-    startVoice(v, note, velocity);
+    
         /*
         if (voices[0].env.isActive())
         {
@@ -284,6 +316,40 @@ void Synth::noteOn(int note, int velocity)
 
 void Synth::noteOff(int note)
 {
+    // actualiza key tracking
+    releaseKey(note);
+    
+    if (numVoices == 1)
+    {
+        // Si la nota liberada era la que estaba asignada a la voz mono:
+        if (voices[0].note == note)
+        {
+            const int next = topKey(); // última tecla aún presionada, o -1
+
+            if (next >= 0)
+            {
+                // seguir tocando con la nota siguiente sin retrigger (legato)
+                restartMonoVoice(next, -1);
+            }
+            else
+            {
+                // no hay teclas: release real
+                if (sustainPedalPressed)
+                {
+                    voices[0].note = SUSTAIN; // con sustain
+                }
+                else
+                {
+                    voices[0].release();
+                    voices[0].note = -1; // NO 0
+                }
+            }
+        }
+
+        return;
+    }
+
+    /*
     if (numVoices == 1)
     {
         // libera la voz 0 si es esa nota
@@ -308,6 +374,7 @@ void Synth::noteOff(int note)
 
         return;
     }
+    */
     /*
     if ((numVoices == 1) && (voices[0].note == note))
     {
@@ -318,6 +385,8 @@ void Synth::noteOff(int note)
         }
     }
     */
+
+    // --- POLY ---
     for (int v = 0; v < MAX_VOICES; v++) 
     {
         if (voices[v].note == note) 
@@ -328,7 +397,7 @@ void Synth::noteOff(int note)
             }
             else {
                 voices[v].release();
-                voices[v].note = 0;
+                voices[v].note = -1;
             }
         }
     }
@@ -356,16 +425,12 @@ void Synth::allocateResources(double sampleRate_, int /*samplesPerBlock*/)
     lfoPitchMul = 1.0f;
 
 }
-
-
+/*
 void Synth::deallocateResources()
 {
     
 }
-
-
-
-
+*/
 
 void Synth::reset()
 {
@@ -378,12 +443,7 @@ void Synth::reset()
     sustainPedalPressed = false;
     modWheel = 0.0f;
     lastNote = 0;
-
 }
-
-
-
-
 
 void Synth::render(float** outputBuffers, int sampleCount)
 {
@@ -572,10 +632,64 @@ void Synth::setPwmDepth(float depth)
 
 bool Synth::isPlayingLegatoStyle() const
 {
+    return keyStackSize > 1;
+    /*
     int held = 0;
     for (int i = 0; i < MAX_VOICES; ++i)
     {
         if (voices[i].note > 0) { held += 1; }
     }
     return held > 0;
+    */
+}
+
+bool Synth::noteIsDown(int note) const
+{
+    if (note < 0 || note > 127) return false;
+    return keyDown[note];
+}
+
+void Synth::pushKey(int note)
+{
+    if (note < 0 || note > 127) return;
+    if (keyDown[note]) return;
+
+    keyDown[note] = true;
+    keyStack[keyStackSize++] = note;
+}
+
+void Synth::releaseKey(int note)
+{
+    if (note < 0 || note > 127) return;
+    if (!keyDown[note]) return;
+
+    keyDown[note] = false;
+
+    // remover del stack manteniendo orden
+    for (int i = 0; i < keyStackSize; ++i)
+    {
+        if (keyStack[i] == note)
+        {
+            for (int j = i; j < keyStackSize - 1; ++j)
+                keyStack[j] = keyStack[j + 1];
+            --keyStackSize;
+            break;
+        }
+    }
+}
+
+int Synth::topKey() const
+{
+    return (keyStackSize > 0) ? keyStack[keyStackSize - 1] : -1;
+}
+
+bool Synth::legatoOnThisNoteOn(int note) const
+{
+    // Legato real: entra un noteOn mientras hay alguna tecla presionada distinta a esa
+    // (antes de hacer pushKey(note)).
+    if (note < 0 || note > 127) return false;
+
+    if (keyStackSize == 0) return false;
+    if (keyStackSize == 1 && noteIsDown(note)) return false; // repeticion
+    return true;
 }

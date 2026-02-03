@@ -45,7 +45,7 @@ public:
     juce::LinearSmoothedValue<float> outputLevelSmoother;
 
     void allocateResources(double sampleRate, int samplesPerBlock);
-    void deallocateResources();
+    //void deallocateResources();
     void reset();
     void render(float** outputBuffers, int sampleCount);
     void midiMessage(uint8_t data0, uint8_t data1, uint8_t data2);
@@ -61,18 +61,29 @@ public:
     float noiseMix{};
 
 private:
+    // --- Key tracking ---
+    std::array<bool, 128> keyDown{};     // true si la tecla está presionada
+    std::array<int, 128>  keyStack{};    // stack de notas presionadas (orden)
+    int keyStackSize = 0;
+
+    bool noteIsDown(int note) const;
+    void pushKey(int note);
+    void releaseKey(int note);
+    int  topKey() const;                // última nota presionada o -1
+    bool legatoOnThisNoteOn(int note) const; // true si había otra tecla presionada antes de este noteOn
+
     void noteOn(int note, int velocity);
     void noteOff(int note);
     void restartMonoVoice(int note, int velocity);
-    void shiftQueuedNotes();
-    int nextQueuedNote();
+    //void shiftQueuedNotes();
+    //int nextQueuedNote();
 
     bool isPlayingLegatoStyle() const;
-    int lastNote = 0;
+    int lastNote = -1;
 
 
     bool sustainPedalPressed{};
-    int queuedVelocity[MAX_VOICES]{};
+    //int queuedVelocity[MAX_VOICES]{};
     
     float sampleRate{};
     std::array<Voice, MAX_VOICES> voices;
