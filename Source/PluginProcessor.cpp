@@ -279,12 +279,28 @@ void AndesJXAudioProcessor::update()
     synth.ignoreVelocity = false;
     }
     
-    //actualizar LFO
+    //Actualizar LFO
     const float lfoNorm = lfoRateParam->get();          // 0..1
     const float lfoHz = std::exp(7.0f * lfoNorm - 4.0f);
     synth.setLfoRateHz(lfoHz);
 
-    // Implementar lógica de vibrato/PWM
+    
+    
+    //GLIDE / PORTAMENTO
+
+    const float inverseUpdateRate = 32.0f / sampleRate;
+    synth.glideMode = glideModeParam->getIndex();
+    float gr = glideRateParam->get();
+    if (gr < 2.0f) {
+        synth.glideRate = 1.0f; // no glide
+    } else {
+    synth.glideRate = 1.0f - std::exp(-inverseUpdateRate * std::exp(6.0f - 0.07f * gr));
+    }
+    synth.glideBend = glideBendParam->get();
+      
+        
+    
+    // Vibrato/PWM
     float vibratoValue = vibratoParam->get(); // Asume que va de -100 a +100
 
     // Calcular valores al cuadrado para vibrato en semitonos

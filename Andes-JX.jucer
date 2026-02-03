@@ -50,9 +50,10 @@
   <EXPORTFORMATS>
     <VS2022 targetFolder="Builds/VisualStudio2022" extraCompilerFlags=" /W4&#13;">
       <CONFIGURATIONS>
-        <CONFIGURATION isDebug="0" name="Release" targetName="Andes-JX"/>
         <CONFIGURATION isDebug="1" name="Debug" targetName="Andes-JX" enablePluginBinaryCopyStep="1"
-                       winArchitecture="x64"/>
+                       winArchitecture="x64" vst3BinaryLocation_Win32="E:\Mis PlugIns"
+                       vst3BinaryLocation_x64="E:\Mis PlugIns"/>
+        <CONFIGURATION isDebug="0" name="Release" targetName="Andes-JX"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
         <MODULEPATH id="juce_audio_basics" path="../../../../../../JUCE/JUCE/modules"/>
