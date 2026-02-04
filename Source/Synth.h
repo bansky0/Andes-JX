@@ -62,15 +62,15 @@ public:
 
 private:
     // --- Key tracking ---
-    std::array<bool, 128> keyDown{};     // true si la tecla está presionada
+    std::array<bool, 128> keyDown{};     // true si la tecla estÃ¡ presionada
     std::array<int, 128>  keyStack{};    // stack de notas presionadas (orden)
     int keyStackSize = 0;
 
     bool noteIsDown(int note) const;
     void pushKey(int note);
     void releaseKey(int note);
-    int  topKey() const;                // última nota presionada o -1
-    bool legatoOnThisNoteOn(int note) const; // true si había otra tecla presionada antes de este noteOn
+    int  topKey() const;                // Ãºltima nota presionada o -1
+    bool legatoOnThisNoteOn(int note) const; // true si habÃ­a otra tecla presionada antes de este noteOn
 
     void noteOn(int note, int velocity);
     void noteOff(int note);

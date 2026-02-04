@@ -81,7 +81,29 @@ void Synth::restartMonoVoice(int note, int /*velocity*/)
     voice.osc2.setFrequency(voice.freqCurrent * pitchBend * detune * lfoPitchMul);
 
     // legato = NO retrigger envelope
+    // AGREGAR: Actualizar envelope sin retrigger
+    Envelope& env = voice.env;
+    
+    /*
+    // Si estaba en release, volver a sustain
+    if (env.level < envSustain) {
+        // Retomar attack suavemente
+        env.attack();
+    }
+    */
+    // Actualizar parámetros del envelope
+    env.attackMultiplier = envAttack;
+    env.decayMultiplier = envDecay;
+    env.sustainLevel = envSustain;
+    env.releaseMultiplier = envRelease;
 
+    /*
+    // Actualizar velocity solo si se proporciona
+    if (velocity > 0 && !ignoreVelocity) {
+        float vel = 0.004f * float((velocity + 64) * (velocity + 64)) - 8.0f;
+        voice.velocityGain = 0.01f * vel;
+    }
+    */
     //voice.env.level += SILENCE + SILENCE;
     voice.note = note;
     voice.released = false;
@@ -179,13 +201,13 @@ void Synth::startVoice(int v, int note, int velocity)
     Voice& voice = voices[v];
     
     // 1) Detecta legato ANTES de startNote()
-    const bool wasLegato = isPlayingLegatoStyle();
+    const bool wasLegato = (numVoices == 1) && isPlayingLegatoStyle();
 
     // 2) Marca la nota como activa
     voice.startNote(note);
     voice.randomPan = rng.nextFloat() * 2.0f - 1.0f;
-    voice.stereoWidth = stereoWidth;
-    voice.updatePanning(v);
+    //voice.stereoWidth = stereoWidth;
+    //voice.updatePanning(v);
     
     const float freq = calcBaseFreq(v, note);
     voice.freqTarget = freq;
@@ -193,9 +215,17 @@ void Synth::startVoice(int v, int note, int velocity)
     
     // 3) Decide si debe hacer glide según modo
     bool shouldGlide = false;
+    
+    if (numVoices == 1) {  // SOLO en modo mono
+        if (glideMode == 2) shouldGlide = true;
+        else if (glideMode == 1) shouldGlide = wasLegato;
+    }
+    /*
     if (glideMode == 2) shouldGlide = true;           // Always
     else if (glideMode == 1) shouldGlide = wasLegato; // Legato
     // glideMode == 0 => Off
+    */
+
 
     voice.glideRateThisNote = shouldGlide ? glideRate : 1.0f;
 
@@ -210,9 +240,13 @@ void Synth::startVoice(int v, int note, int velocity)
             const float startSemis = float(noteDistance) - glideBend;
             voice.freqCurrent = freq * std::pow(1.059463094359f, -startSemis);
         }
-        
+
+        if (numVoices == 1) {
+            lastNote = note;
+        }
+        /*
         lastNote = note;
-        
+        */
         // osciladores arrancan con freqCurrent (como ya tienes)
         voice.osc1.setFrequency(voice.freqCurrent * pitchBend);
         voice.osc1.reset();
@@ -329,7 +363,7 @@ void Synth::noteOff(int note)
             if (next >= 0)
             {
                 // seguir tocando con la nota siguiente sin retrigger (legato)
-                restartMonoVoice(next, -1);
+                restartMonoVoice(next, 0);
             }
             else
             {
@@ -459,8 +493,8 @@ void Synth::render(float** outputBuffers, int sampleCount)
             voice.stereoWidth = stereoWidth;
             voice.updatePanning(v);
 
-            voice.osc1.setFrequency(voice.freqCurrent * pitchBend * lfoPitchMul);
-            voice.osc2.setFrequency(voice.freqCurrent * pitchBend * detune * lfoPitchMul);
+            //voice.osc1.setFrequency(voice.freqCurrent * pitchBend * lfoPitchMul);
+            //voice.osc2.setFrequency(voice.freqCurrent * pitchBend * detune * lfoPitchMul);
         }
     }
 
@@ -489,7 +523,7 @@ void Synth::render(float** outputBuffers, int sampleCount)
                 if (!voice.env.isActive())
                     continue;
 
-                // 1) glide one-pole (libro)
+                // 1) glide one-pole (libro)star
                 voice.freqCurrent += voice.glideRateThisNote * (voice.freqTarget - voice.freqCurrent);
 
                 // 2) aplicar a osciladores

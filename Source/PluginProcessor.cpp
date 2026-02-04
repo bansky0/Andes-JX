@@ -305,6 +305,7 @@ void AndesJXAudioProcessor::update()
 
     // Calcular valores al cuadrado para vibrato en semitonos
     synth.lfoDepthSemis = vibratoValue * vibratoValue * 0.0002f; // vibrato
+    //synth.pwmDepth = 0.0f;
     //synth.pwmDepth = std::abs(vibratoValue) * 0.01f;
     //synth.pwmDepth = vibratoValue * vibratoValue * 0.01f;      // PWM
     // Si el parámetro es negativo, usar PWM en lugar de vibrato
