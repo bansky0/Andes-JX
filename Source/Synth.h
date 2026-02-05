@@ -44,6 +44,20 @@ public:
 
     juce::LinearSmoothedValue<float> outputLevelSmoother;
 
+    // --- MIDI CC modulation state (no APVTS write) ---
+    struct CCState
+    {
+        float modWheel = 0.0f;  // CC1   [0..1]
+        float expression = 1.0f;  // CC11  [0..1], 1 = unity
+        float brightness = 0.0f;  // CC74  [0..1]
+        float resonance = 0.0f;  // CC71  [0..1]
+        float attack = 0.0f;  // CC73  [0..1]
+        float release = 0.0f;  // CC72  [0..1]
+        bool  sustain = false; // CC64
+    };
+
+    void setCCState(const CCState& s);
+
     void allocateResources(double sampleRate, int samplesPerBlock);
     //void deallocateResources();
     void reset();
@@ -94,7 +108,8 @@ private:
     int lfoCounter = 0;
     float lfoValue = 0.0f;
     float lfoPitchMul = 1.0f;
-    float modWheel = 0.0f;
+    //float modWheel = 0.0f;
 
+    CCState cc;
 
 };

@@ -223,6 +223,39 @@ void AndesJXAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
         update();
     }
 
+    for (const auto metadata : midiMessages)
+    {
+        const auto msg = metadata.getMessage();
+
+        if (msg.isController())
+        {
+            const int cc = msg.getControllerNumber();
+            const float v = msg.getControllerValue() / 127.0f;
+
+            switch (cc)
+            {
+            case 1:  ccModWheel.store(v, std::memory_order_relaxed); break;          // ModWheel
+            case 11: ccExpression.store(v, std::memory_order_relaxed); break;        // Expression
+            case 74: ccBrightness.store(v, std::memory_order_relaxed); break;        // Brightness
+            case 71: ccResonance.store(v, std::memory_order_relaxed); break;         // Resonance
+            case 73: ccAttack.store(v, std::memory_order_relaxed); break;            // Attack
+            case 72: ccRelease.store(v, std::memory_order_relaxed); break;           // Release
+            case 64: ccSustainDown.store(v >= 0.5f, std::memory_order_relaxed); break; // Sustain
+            default: break;
+            }
+        }
+    }
+    Synth::CCState s;
+    s.modWheel = ccModWheel.load(std::memory_order_relaxed);
+    s.expression = ccExpression.load(std::memory_order_relaxed);
+    s.brightness = ccBrightness.load(std::memory_order_relaxed);
+    s.resonance = ccResonance.load(std::memory_order_relaxed);
+    s.attack = ccAttack.load(std::memory_order_relaxed);
+    s.release = ccRelease.load(std::memory_order_relaxed);
+    s.sustain = ccSustainDown.load(std::memory_order_relaxed);
+
+    synth.setCCState(s);
+
     splitBufferByEvents(buffer, midiMessages);
 }
 

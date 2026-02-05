@@ -144,6 +144,14 @@ private:
     juce::AudioParameterChoice* polyModeParam;
     juce::AudioParameterFloat* stereoWidthParam;
 
+    std::atomic<float> ccModWheel{ 0.0f };     // CC1   [0..1]
+    std::atomic<float> ccExpression{ 1.0f };   // CC11  [0..1]  (1 = unity)
+    std::atomic<float> ccBrightness{ 0.0f };   // CC74  [0..1]
+    std::atomic<float> ccResonance{ 0.0f };    // CC71  [0..1]
+    std::atomic<float> ccAttack{ 0.0f };       // CC73  [0..1]
+    std::atomic<float> ccRelease{ 0.0f };      // CC72  [0..1]
+    std::atomic<bool>  ccSustainDown{ false }; // CC64
+
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AndesJXAudioProcessor)
 };

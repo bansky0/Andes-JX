@@ -18,6 +18,13 @@ Synth::Synth()
 
 
 }
+
+void Synth::setCCState(const CCState& s)
+{
+    cc = s;
+    sustainPedalPressed = cc.sustain;
+}
+
 /*
 int Synth::nextQueuedNote()
 {
@@ -52,7 +59,7 @@ void Synth::restartMonoVoice(int note, int /*velocity*/)
     const float freq = calcBaseFreq(0, note);
 
     // actualizar nota base
-    voice.freq = freq;
+    //voice.freq = freq;
     voice.freqTarget = freq;
 
     const bool wasLegato = true;
@@ -92,10 +99,12 @@ void Synth::restartMonoVoice(int note, int /*velocity*/)
     }
     */
     // Actualizar parámetros del envelope
+    const float relMult = 0.25f + 1.75f * cc.release;
+
     env.attackMultiplier = envAttack;
     env.decayMultiplier = envDecay;
     env.sustainLevel = envSustain;
-    env.releaseMultiplier = envRelease;
+    env.releaseMultiplier = envRelease * relMult;
 
     /*
     // Actualizar velocity solo si se proporciona
@@ -112,30 +121,11 @@ void Synth::restartMonoVoice(int note, int /*velocity*/)
 
 void Synth::controlChange(uint8_t data1, uint8_t data2)
 {
-
-    switch (data1) {
-        // All notes off
-    default:
-        if (data1 >= 0x78) {
-            for (int v = 0; v < MAX_VOICES; ++v) {
-                voices[v].reset();
-            }
-            sustainPedalPressed = false;
-        }
-        break;
-        // Sustain pedal
-        
-        case 0x40:
-        sustainPedalPressed = (data2 >= 64);
-        if (!sustainPedalPressed) { // add this
-            noteOff(SUSTAIN);
-        }
-        break;
-        
-        // Mod wheel (CC1)
-        case 0x01: 
-        modWheel = 0.000005f * float(data2 * data2);
-        break;
+    if (data1 >= 0x78)
+    {
+        for (int v = 0; v < MAX_VOICES; ++v)
+            voices[v].reset();
+        sustainPedalPressed = false;
     }
 }
 
@@ -205,6 +195,7 @@ void Synth::startVoice(int v, int note, int velocity)
 
     // 2) Marca la nota como activa
     voice.startNote(note);
+
     voice.randomPan = rng.nextFloat() * 2.0f - 1.0f;
     //voice.stereoWidth = stereoWidth;
     //voice.updatePanning(v);
@@ -265,11 +256,15 @@ void Synth::startVoice(int v, int note, int velocity)
     voice.osc2Gain = oscMix;
     Envelope& env = voice.env;
 
+    // multiplicadores por CC (performance)
+    const float atkMult = 0.25f + 1.75f * cc.attack;   // [0.25..2.0]
+    const float relMult = 0.25f + 1.75f * cc.release;  // [0.25..2.0]
+
     // Configurar ADSR
-    env.attackMultiplier = envAttack;
+    env.attackMultiplier = envAttack * atkMult;
     env.decayMultiplier = envDecay;
     env.sustainLevel = envSustain;
-    env.releaseMultiplier = envRelease;
+    env.releaseMultiplier = envRelease * relMult;
 
     // Iniciar ataque
     env.attack();
@@ -475,8 +470,10 @@ void Synth::reset()
     noiseGen.reset();
     pitchBend = 1.0f;
     sustainPedalPressed = false;
-    modWheel = 0.0f;
-    lastNote = 0;
+    //modWheel = 0.0f;
+    lastNote = -1;
+    keyDown.fill(false);
+    keyStackSize = 0;
 }
 
 void Synth::render(float** outputBuffers, int sampleCount)
@@ -506,10 +503,18 @@ void Synth::render(float** outputBuffers, int sampleCount)
         {
             lfoCounter = 0;
             const float lfoSine = lfo.nextSample(); // -1..+1
+            
+            // Vibrato depth modulado por Mod Wheel (CC1)
+            const float baseVibratoSemis = lfoDepthSemis;     // parámetro APVTS
+            const float modWheelCurved = cc.modWheel * cc.modWheel;
+            const float effectiveVibratoSemis = baseVibratoSemis * modWheelCurved;
 
+            const float vibratoPitchMul = std::exp2((lfoSine * effectiveVibratoSemis) / 12.0f);
+            /*
             const float modWheelSemis = modWheel * 12.0f;
             const float totalVibratoSemis = lfoDepthSemis + modWheelSemis;
             const float vibratoPitchMul = std::exp2((lfoSine * totalVibratoSemis) / 12.0f);
+            */
 
             lfoPitchMul = vibratoPitchMul;
 
@@ -561,6 +566,12 @@ void Synth::render(float** outputBuffers, int sampleCount)
         const float gain = outputLevelSmoother.getNextValue();
         outL *= gain;
         outR *= gain;
+
+        // CC11 Expression (modulación, no APVTS)
+        float expr = cc.expression;   // [0..1]  (asumiendo que ya se setea cc desde setCCState)
+        expr = expr * expr;           // curva perceptual opcional (más control en valores bajos)
+        outL *= expr;
+        outR *= expr;
 
         if (outputBufferRight != nullptr)
         {
