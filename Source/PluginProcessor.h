@@ -11,11 +11,14 @@
 #include <JuceHeader.h>
 #include "Synth.h"
 #include "Preset.h"
+#include <juce_dsp/juce_dsp.h>
 
 namespace ParameterID
 {
     #define PARAMETER_ID(str) const juce::ParameterID str(#str, 1);
 
+    PARAMETER_ID(osc1Wave)
+    PARAMETER_ID(osc2Wave)
     PARAMETER_ID(oscMix)
     PARAMETER_ID(oscTune)
     PARAMETER_ID(oscFine)
@@ -27,6 +30,8 @@ namespace ParameterID
     PARAMETER_ID(filterEnv)
     PARAMETER_ID(filterLFO)
     PARAMETER_ID(filterVelocity)
+    PARAMETER_ID(filterKeytrack)
+    PARAMETER_ID(filterKeycenter)
     PARAMETER_ID(filterAttack)
     PARAMETER_ID(filterDecay)
     PARAMETER_ID(filterSustain)
@@ -45,6 +50,8 @@ namespace ParameterID
     PARAMETER_ID(stereoWidth)
 
     #undef PARAMETER_ID
+
+    inline constexpr auto filterType = "filterType";
 }
 
 //==============================================================================
@@ -116,6 +123,8 @@ private:
 
     Synth synth;
 
+    juce::AudioParameterChoice* osc1WaveParam;
+    juce::AudioParameterChoice* osc2WaveParam;
     juce::AudioParameterFloat* oscMixParam;
     juce::AudioParameterFloat* oscTuneParam;
     juce::AudioParameterFloat* oscFineParam;
@@ -127,6 +136,8 @@ private:
     juce::AudioParameterFloat* filterEnvParam;
     juce::AudioParameterFloat* filterLFOParam;
     juce::AudioParameterFloat* filterVelocityParam;
+    juce::AudioParameterFloat* filterKeytrackParam;
+    juce::AudioParameterFloat* filterKeycenterParam;
     juce::AudioParameterFloat* filterAttackParam;
     juce::AudioParameterFloat* filterDecayParam;
     juce::AudioParameterFloat* filterSustainParam;
@@ -152,6 +163,9 @@ private:
     std::atomic<float> ccRelease{ 0.0f };      // CC72  [0..1]
     std::atomic<bool>  ccSustainDown{ false }; // CC64
 
+    std::unique_ptr<juce::dsp::Oversampling<float>> oversampling;
+    void splitBufferByEventsOptimized(juce::dsp::AudioBlock<float>& block, juce::MidiBuffer& midiMessages);
+    juce::AudioParameterChoice* filterTypeParam = nullptr;
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AndesJXAudioProcessor)
 };

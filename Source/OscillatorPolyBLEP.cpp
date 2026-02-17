@@ -67,6 +67,13 @@ void OscillatorPolyBLEP::setFrequency(float newFreq)
 // Waveforms
 //==============================================================================
 
+float OscillatorPolyBLEP::sine()
+{
+    float out = std::sin(TWO_PI * phase);
+    advance();
+    return out;
+}
+
 float OscillatorPolyBLEP::saw()
 {
     float t = phase;

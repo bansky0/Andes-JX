@@ -31,6 +31,7 @@ public:
 
     void syncPhase(const OscillatorPolyBLEP& other);
 
+    float sine();
     float saw();
     float square();
     float squarePWM();
@@ -40,6 +41,7 @@ public:
 private:
     float sampleRate = 48000.f;
     float phase = 0.0f;
+    float phaseInc = 0.0f;
     float frequency = 440.f;
     float integrator = 0.0f;
     float pulseWidth = 0.5f;

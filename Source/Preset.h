@@ -11,8 +11,7 @@
 #pragma once
 
 #include <cstring>
-
-const int NUM_PARAMS = 26;
+#include "Constants.h"
 
 struct Preset
 {
@@ -23,7 +22,7 @@ struct Preset
            float p12, float p13, float p14, float p15,
            float p16, float p17, float p18, float p19,
            float p20, float p21, float p22, float p23,
-           float p24, float p25)
+           float p24, float p25, float p26, float p27)
     {
         strcpy(this->name, name);
         param[0]  = p0;   // Osc Mix
@@ -38,20 +37,22 @@ struct Preset
         param[9]  = p9;   // Filter LFO
         param[10] = p10;  // Velocity
         param[11] = p11;  // Filter Attack
-        param[12] = p12;  // Filter Decay
-        param[13] = p13;  // Filter Sustain
-        param[14] = p14;  // Filter Release
-        param[15] = p15;  // Env Attack
-        param[16] = p16;  // Env Decay
-        param[17] = p17;  // Env Sustain
-        param[18] = p18;  // Env Release
-        param[19] = p19;  // LFO Rate
-        param[20] = p20;  // Vibrato
-        param[21] = p21;  // Noise
-        param[22] = p22;  // Octave
-        param[23] = p23;  // Tuning
-        param[24] = p24;  // Output Level
-        param[25] = p25;  // Polyphony
+        param[12] = p12;  // KeytrackParam
+        param[13] = p13;  // KeycenterParam
+        param[14] = p14;  // Filter Decay
+        param[15] = p15;  // Filter Sustain
+        param[16] = p16;  // Filter Release
+        param[17] = p17;  // Env Attack
+        param[18] = p18;  // Env Decay
+        param[19] = p19;  // Env Sustain
+        param[20] = p20;  // Env Release
+        param[21] = p21;  // LFO Rate
+        param[22] = p22;  // Vibrato
+        param[23] = p23;  // Noise
+        param[24] = p24;  // Octave
+        param[25] = p25;  // Tuning
+        param[26] = p26;  // Output Level
+        param[27] = p27;  // Polyphony
     }
 
     char name[40];

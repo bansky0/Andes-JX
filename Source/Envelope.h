@@ -28,10 +28,12 @@ public:
     float nextValue()
     {
         level = multiplier * (level - target) + target;
-        if (level + target > 3.0f) {
+        if (target >= 2.0f && level >= target * 0.99f) {
+            // Transición Attack ? Decay
             multiplier = decayMultiplier;
             target = sustainLevel;
         }
+
         return level;
     }
 

@@ -20,6 +20,7 @@ class Synth
 {
 public:
     Synth();
+    ~Synth();
     int numVoices{};
     float envAttack{};
     float envDecay{};
@@ -33,7 +34,7 @@ public:
     float volumeTrim{};
     float velocitySensitivity = 0.0f;
     bool ignoreVelocity = false;
-    
+
     float lfoRateHz = 5.0f;      
     float lfoDepthSemis = 0.0f;
     float pwmDepth = 0.0f;
@@ -42,7 +43,35 @@ public:
     float glideRate = 1.0f;
     float glideBend = 0.0f;
 
+    float filterCutoff = 5000.0f;
+    float filterResonance = 0.0f;
+
+    // KEY TRACKING - NUEVO
+    float filterKeytrackAmount = 0.0f;   // 0 = sin tracking, 1 = tracking completo
+    int   filterKeycenterNote = 60;      // C4 por defecto (middle C)
+
+    float filterLFODepthSemis = 0.0f; // profundidad LFO->cutoff (semitonos)
+    float filterZipSemis = 0.0f;
+
+    float filterEnvAmountSemis = 0.0f; // amount (bipolar)
+    float filterVelocityAmount = 0.0f;
+    float filterEnvAttack{};
+    float filterEnvDecay{};
+    float filterEnvSustain{};
+    float filterEnvRelease{};
+
     juce::LinearSmoothedValue<float> outputLevelSmoother;
+
+    // Tipo de filtro seleccionado
+    enum FilterType
+    {
+        FILTER_SVF = 0,   // State Variable Filter (actual)
+        FILTER_MOOG = 1   // Moog Ladder (Huovilainen)
+    };
+
+    FilterType filterType = FILTER_SVF;  // Por defecto SVF
+
+    void setFilterType(FilterType type);  // Método para cambiar filtro
 
     // --- MIDI CC modulation state (no APVTS write) ---
     struct CCState
@@ -51,9 +80,12 @@ public:
         float expression = 1.0f;  // CC11  [0..1], 1 = unity
         float brightness = 0.0f;  // CC74  [0..1]
         float resonance = 0.0f;  // CC71  [0..1]
-        float attack = 0.0f;  // CC73  [0..1]
-        float release = 0.0f;  // CC72  [0..1]
+        float attack = 1.0f;  // CC73  [0..1]
+        float release = 1.0f;  // CC72  [0..1]
         bool  sustain = false; // CC64
+        float aftertouch = 0.0f;
+        float filterPlus = 0.0f; // 0..1
+        float filterMinus = 0.0f; // 0..1
     };
 
     void setCCState(const CCState& s);
@@ -71,10 +103,20 @@ public:
     void setLfoRateHz(float hz);
     void setLfoDepthSemis(float semis);
     void setPwmDepth(float depth);
+    
+    void setOsc1Wave(WaveType wt);
+    void setOsc2Wave(WaveType wt);
+
+    // NUEVO: Calcular cutoff con key tracking
+    float calculateKeyTrackedCutoff(int midiNote, float baseCutoff) const;
 
     float noiseMix{};
 
 private:
+
+    WaveType osc1Wave = WaveType::Saw;
+    WaveType osc2Wave = WaveType::Saw;
+
     // --- Key tracking ---
     std::array<bool, 128> keyDown{};     // true si la tecla está presionada
     std::array<int, 128>  keyStack{};    // stack de notas presionadas (orden)

@@ -10,9 +10,12 @@
 
 #pragma once
 
-//#include "Oscillator.h"
-#include "OscillatorPolyBLEP.h"
+#include "Oscillator.h"
+//#include "OscillatorPolyBLEP.h"
 #include "Envelope.h"
+#include "IFilter.h"
+#include "SVFFilter.h"
+#include "MoogFilter.h"
 
 struct Voice
 {
@@ -26,16 +29,24 @@ struct Voice
     float freqCurrent = 0.0f;  // frecuencia “con glide” (la que realmente suena)
     float freqTarget  = 0.0f;  // objetivo (la nota nueva)
     float glideRateThisNote = 1.0f; // 1.0 = sin glide
-
-    
-
+    float cutoffZipHz = 0.0f;
+    float filterEnvDepthMultiplier = 1.0f;
+    float filterEnvValue = 0.0f;
+    float filterResonance = 0.0f;
     //int age = 0;          // contador simple
     bool released = false; // flag simple
 
-    OscillatorPolyBLEP osc1;
-    OscillatorPolyBLEP osc2;
+    Oscillator osc1;
+    Oscillator osc2;
     Envelope env;
-    
+    //IFilter* filter=nullptr;
+    SVFFilter svfFilter;
+    MoogFilter moogFilter;
+    IFilter* filter = nullptr;
+    Envelope filterEnv;
+
+
+
 /*    inline void updateLFO()
 {
     freqCurrent += glideRate * (freqTarget - freqCurrent);
@@ -63,23 +74,38 @@ struct Voice
         stopNote();
         released = false;
         //age = 0;
+        cutoffZipHz = 0.0f;
+        //filterZipSemis = 0.0f;
 
         env.reset();
         osc1.reset();
         osc2.reset();
 
+        if (filter != nullptr)
+            filter->reset();
+
         panLeft = 0.707f;
         panRight = 0.707f;
+
+        filterEnvValue = 0.0f;
+        filterEnv.reset();
     }
 
-    float render(float noise, bool usePwm)
+    float render(float noise, bool /*usePwm*/)
     {
         // si se activa esta parte es el jx tradicional (sonido tradicional)
         float sample1 = osc1.nextSample();
         //float sample2 = osc2.nextSample() * osc2Gain;
-        float sample2 = (usePwm ? osc2.squarePWM() : osc2.nextSample()) * osc2Gain;
+        //float sample2 = (usePwm ? osc2.squarePWM() : osc2.nextSample()) * osc2Gain;
+        float sample2 = osc2.nextSample() * osc2Gain;
         float output = sample1 - sample2 + noise;
+        //filter.updateCoefficients(cutoff, Q);
+        //output = filter.render(output);
+        if (filter != nullptr)
+            output = filter->render(output);
         float envelope = env.nextValue();
+        filterEnvValue = filterEnv.nextValue();
+
         return output * envelope * velocityGain;
         
         /*
@@ -101,6 +127,7 @@ struct Voice
     {
         released = true;
         env.release();
+        filterEnv.release();
     }
     
     void updatePanning(int /*voiceIndex*/)
@@ -123,5 +150,18 @@ struct Voice
         // 5. Ley de potencia constante (para que no baje el volumen al panear)
         panLeft = std::sin(PI_OVER_4 * (1.0f - panning));
         panRight = std::sin(PI_OVER_4 * (1.0f + panning));
+    }
+
+    float filterCutoffHz = 1000.0f;
+    float filterRes = 0.0f;
+
+    void setFilter(float cutoffHz, float resonance)
+    {
+        filterCutoffHz = cutoffHz;
+        filterResonance = resonance;
+        //filterQ = Q;
+        //filter.updateCoefficients(filterCutoffHz, filterQ);
+        if (filter != nullptr)
+            filter->updateCoefficients(filterCutoffHz, filterResonance);
     }
 };

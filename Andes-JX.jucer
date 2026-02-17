@@ -25,6 +25,11 @@
       <FILE id="KrOAUy" name="PluginProcessor.h" compile="0" resource="0"
             file="Source/PluginProcessor.h"/>
       <FILE id="dXiOGQ" name="Preset.h" compile="0" resource="0" file="Source/Preset.h"/>
+      <FILE id="FcViSP" name="IFilter.h" compile="0" resource="0" file="Source/IFilter.h"/>
+      <FILE id="Lxv9uL" name="SVF.h" compile="0" resource="0" file="Source/SVF.h"/>
+      <FILE id="HCUY90" name="SVFFilter.h" compile="0" resource="0" file="Source/SVFFilter.h"/>
+      <FILE id="tAFGV1" name="LadderFilter.h" compile="0" resource="0" file="Source/LadderFilter.h"/>
+      <FILE id="K4PkoD" name="MoogFilter.h" compile="0" resource="0" file="Source/MoogFilter.h"/>
       <FILE id="A0ZvJt" name="Synth.cpp" compile="1" resource="0" file="Source/Synth.cpp"/>
       <FILE id="fkEGDa" name="Synth.h" compile="0" resource="0" file="Source/Synth.h"/>
       <FILE id="Vre7I0" name="Utils.h" compile="0" resource="0" file="Source/Utils.h"/>
@@ -41,6 +46,7 @@
     <MODULE id="juce_audio_utils" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="juce_core" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="juce_data_structures" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_dsp" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="juce_events" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="juce_graphics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="juce_gui_basics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
@@ -67,6 +73,7 @@
         <MODULEPATH id="juce_graphics" path="../../../../../../JUCE/JUCE/modules"/>
         <MODULEPATH id="juce_gui_basics" path="../../../../../../JUCE/JUCE/modules"/>
         <MODULEPATH id="juce_gui_extra" path="../../../../../../JUCE/JUCE/modules"/>
+        <MODULEPATH id="juce_dsp" path="../../../../../../JUCE/JUCE/modules"/>
       </MODULEPATHS>
     </VS2022>
   </EXPORTFORMATS>

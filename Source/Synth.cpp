@@ -11,12 +11,48 @@
 #include "Synth.h"
 #include "Utils.h"
 #include "Constants.h"
+#include "SVFFilter.h" 
+#include "MoogFilter.h"
 
 Synth::Synth()
 {
     sampleRate = 48000.0f; // originally 44100.0f
+    setFilterType(FILTER_SVF);
+}
 
+Synth::~Synth()
+{
 
+}
+
+void Synth::setOsc1Wave(WaveType wt)
+{
+    osc1Wave = wt;
+    for (int v = 0; v < MAX_VOICES; ++v)
+        voices[v].osc1.setWaveType(osc1Wave);
+}
+
+void Synth::setOsc2Wave(WaveType wt)
+{
+    osc2Wave = wt;
+    for (int v = 0; v < MAX_VOICES; ++v)
+        voices[v].osc2.setWaveType(osc2Wave);
+}
+
+float Synth::calculateKeyTrackedCutoff(int midiNote, float baseCutoff) const
+{
+    // Calcular distancia desde el centro en semitonos
+    const float semitoneDistance = float(midiNote - filterKeycenterNote);
+
+    // Convertir a multiplicador de frecuencia
+    // 1 semitono = factor de 2^(1/12) ≈ 1.059463
+    const float frequencyRatio = std::exp2(semitoneDistance / 12.0f);
+
+    // Aplicar tracking amount (0 = sin tracking, 1 = tracking completo)
+    // Interpolación entre baseCutoff (sin tracking) y baseCutoff*ratio (tracking completo)
+    const float trackedCutoff = baseCutoff * std::pow(frequencyRatio, filterKeytrackAmount);
+
+    return trackedCutoff;
 }
 
 void Synth::setCCState(const CCState& s)
@@ -52,14 +88,14 @@ void Synth::shiftQueuedNotes()
     }
 }
 */
-void Synth::restartMonoVoice(int note, int /*velocity*/)
+void Synth::restartMonoVoice(int note, int velocity)
 {
     Voice& voice = voices[0];
 
-    const float freq = calcBaseFreq(0, note);
+    voice.osc1.setWaveType(osc1Wave);
+    voice.osc2.setWaveType(osc2Wave);
 
-    // actualizar nota base
-    //voice.freq = freq;
+    const float freq = calcBaseFreq(0, note);
     voice.freqTarget = freq;
 
     const bool wasLegato = true;
@@ -87,38 +123,123 @@ void Synth::restartMonoVoice(int note, int /*velocity*/)
     voice.osc1.setFrequency(voice.freqCurrent * pitchBend * lfoPitchMul);
     voice.osc2.setFrequency(voice.freqCurrent * pitchBend * detune * lfoPitchMul);
 
-    // legato = NO retrigger envelope
-    // AGREGAR: Actualizar envelope sin retrigger
+    // ============================================================
+    // MEJORA CLAVE: Manejo inteligente del envelope para legato
+    // ============================================================
     Envelope& env = voice.env;
-    
-    /*
-    // Si estaba en release, volver a sustain
-    if (env.level < envSustain) {
-        // Retomar attack suavemente
-        env.attack();
-    }
-    */
+
     // Actualizar parámetros del envelope
     const float relMult = 0.25f + 1.75f * cc.release;
-
-    env.attackMultiplier = envAttack;
+    const float atkMult = 0.25f + 1.75f * cc.attack;
+    env.attackMultiplier = std::pow(envAttack, 1.0f / atkMult);
     env.decayMultiplier = envDecay;
     env.sustainLevel = envSustain;
-    env.releaseMultiplier = envRelease * relMult;
+    env.releaseMultiplier = std::pow(envRelease, 1.0f / relMult);
 
-    /*
-    // Actualizar velocity solo si se proporciona
-    if (velocity > 0 && !ignoreVelocity) {
-        float vel = 0.004f * float((velocity + 64) * (velocity + 64)) - 8.0f;
-        voice.velocityGain = 0.01f * vel;
+    // Solo hacer attack() si el envelope está muy bajo o en release
+    if (env.level < 0.1f || voice.released)
+    {
+        // Envelope casi silencioso o voz en release: hacer attack completo
+        env.attack();
     }
-    */
-    //voice.env.level += SILENCE + SILENCE;
+    // Si env.level >= 0.1f y NO está en release: 
+    // mantener level actual para transición legato suave
+    // (solo actualizamos los parámetros arriba, sin retriggear)
+
+    // ============================================================
+    // Lo mismo para el filter envelope
+    // ============================================================
+    Envelope& fe = voice.filterEnv;
+    fe.attackMultiplier = filterEnvAttack;
+    fe.decayMultiplier = filterEnvDecay;
+    fe.sustainLevel = filterEnvSustain;
+    fe.releaseMultiplier = filterEnvRelease;
+
+    if (fe.level < 0.1f || voice.released)
+    {
+        fe.attack();
+    }
+
+    // ============================================================
+    // Velocity
+    // ============================================================
+    const float velNorm = juce::jlimit(0.0f, 1.0f, (float)velocity / 127.0f);
+    const float velCurve = velNorm * velNorm;
+    const float amt = ignoreVelocity ? 0.0f : juce::jlimit(0.0f, 1.0f, velocitySensitivity);
+
+    // amt=0 -> gain=1, amt=1 -> gain=velCurve
+    voice.velocityGain = (1.0f - amt) + amt * velCurve;
+
+    // ============================================================
+    // IMPORTANTE: Marcar voz como activa (NO released)
+    // ============================================================
     voice.note = note;
-    voice.released = false;
+    voice.released = false;  // ¡CRÍTICO! La voz ahora está activa
     voice.updatePanning(0);
 }
 
+void Synth::controlChange(uint8_t data1, uint8_t data2)
+{
+    // All Notes Off / All Sound Off (CC 120-127)
+    if (data1 >= 0x78)
+    {
+        for (int v = 0; v < MAX_VOICES; ++v)
+            voices[v].reset();
+        sustainPedalPressed = false;
+        return;  // Salir después de procesar
+    }
+
+    switch (data1)
+    {
+    case 0x40:  // CC64 = Sustain Pedal (Damper)
+    {
+        bool pedalDown = (data2 >= 64);
+
+        // Si se SUELTA el pedal (transición de pressed -> not pressed)
+        if (sustainPedalPressed && !pedalDown)
+        {
+            sustainPedalPressed = false;
+
+            // Hacer release de todas las voces que fueron marcadas
+            for (int v = 0; v < MAX_VOICES; ++v)
+            {
+                Voice& voice = voices[v];
+
+                // Solo en voces que:
+                // 1. Están marcadas como "released" (tecla soltada con pedal)
+                // 2. Tienen envelope activo
+                if (voice.released && voice.env.isActive())
+                {
+                    voice.env.release();
+                    voice.filterEnv.release();
+                }
+            }
+        }
+        else if (!sustainPedalPressed && pedalDown)
+        {
+            // Se PRESIONA el pedal
+            sustainPedalPressed = true;
+        }
+        break;
+    }
+
+    case 0x4A:  // CC74 usualmente es cutoff/brightness, pero el libro usa 0x4A como "Filter +"
+    {
+        cc.filterPlus = data2 / 127.0f;
+        break;
+    }
+
+    case 0x4B:  // "Filter -"
+    {
+        cc.filterMinus = data2 / 127.0f;
+        break;
+    }
+
+    default:
+        break;
+    }
+}
+/*
 void Synth::controlChange(uint8_t data1, uint8_t data2)
 {
     if (data1 >= 0x78)
@@ -127,8 +248,22 @@ void Synth::controlChange(uint8_t data1, uint8_t data2)
             voices[v].reset();
         sustainPedalPressed = false;
     }
+    switch (data1)
+    {
+    case 0x4A: // CC74 usualmente es cutoff/brightness, pero el libro usa 0x4A como “Filter +”
+    {
+        cc.filterPlus = data2 / 127.0f;
+        break;
+    }
+    case 0x4B: // “Filter -”
+    {
+        cc.filterMinus = data2 / 127.0f;
+        break;
+    }
+    default: break;
+    }
 }
-
+*/
 float Synth::calcBaseFreq(int v, int note) const
 {
     // offset en semitonos: note + (ANALOG * v)
@@ -190,6 +325,9 @@ void Synth::startVoice(int v, int note, int velocity)
 {
     Voice& voice = voices[v];
     
+    voice.osc1.setWaveType(osc1Wave);
+    voice.osc2.setWaveType(osc2Wave);
+    
     // 1) Detecta legato ANTES de startNote()
     const bool wasLegato = (numVoices == 1) && isPlayingLegatoStyle();
 
@@ -244,9 +382,21 @@ void Synth::startVoice(int v, int note, int velocity)
         voice.osc2.setFrequency(voice.freqCurrent * pitchBend * detune);
         voice.osc2.reset();
     
-    float vel = 0.004f * float((velocity + 64) * (velocity + 64))- 8.0f;
-    voice.velocityGain = 0.01f * vel;
-    
+    //float vel = 0.004f * float((velocity + 64) * (velocity + 64))- 8.0f;
+    //voice.velocityGain = 0.01f * vel;
+    // velocity viene 0..127
+        const float velNorm = juce::jlimit(0.0f, 1.0f, (float)velocity / 127.0f);
+
+        // curva musical típica (más control en valores bajos)
+        const float velCurve = velNorm * velNorm;              // pow(v, 2)
+
+        // amount 0..1 (si ignoreVelocity -> 0)
+        const float amt = ignoreVelocity ? 0.0f : juce::jlimit(0.0f, 1.0f, velocitySensitivity);
+
+        // mezcla: amt=0 => sin velocity (gain=1), amt=1 => full velocity (gain=vCurve)
+        const float g = (1.0f - amt) * 1.0f + amt * velCurve;
+
+        voice.velocityGain = g;
 
     // Sincronizar fase en modo PWM
     if (lfoDepthSemis == 0.0f && pwmDepth > 0.0f) {
@@ -261,17 +411,38 @@ void Synth::startVoice(int v, int note, int velocity)
     const float relMult = 0.25f + 1.75f * cc.release;  // [0.25..2.0]
 
     // Configurar ADSR
-    env.attackMultiplier = envAttack * atkMult;
+    env.attackMultiplier = std::pow(envAttack, 1.0f / atkMult);
     env.decayMultiplier = envDecay;
     env.sustainLevel = envSustain;
-    env.releaseMultiplier = envRelease * relMult;
+    env.releaseMultiplier = std::pow(envRelease, 1.0f / relMult);// envRelease * relMult;
 
     // Iniciar ataque
     env.attack();
+
+    Envelope& fe = voice.filterEnv;
+
+    fe.attackMultiplier = filterEnvAttack;
+    fe.decayMultiplier = filterEnvDecay;
+    fe.sustainLevel = filterEnvSustain;
+    fe.releaseMultiplier = filterEnvRelease;
+
+    fe.attack();
+
+    // Modular profundidad del filter envelope según velocity
+    //const float velNorm = juce::jlimit(0.0f, 1.0f, (float)velocity / 127.0f);
+    //const float velCurve = velNorm * velNorm;  // curva cuadrática para mejor respuesta
+    //const float amt = velocitySensitivity;
+    //voice.velocityGain = (1.0f - amt) + amt * velCurve;
+
+    // Filtro (tu implementación actual: escala profundidad del filter env)
+    voice.filterEnvDepthMultiplier = (1.0f - filterVelocityAmount) + filterVelocityAmount * velCurve;
+    // filterVelocityAmount de 0 a 1:
+    // - Si amount = 0: sin efecto (multiplier = 1)
+    // - Si amount = 1: rango completo (vel baja = 0.5x, vel alta = 1.5x)
+    //const float velRange = filterVelocityAmount;
+    //voice.filterEnvDepthMultiplier = 1.0f - velRange + (2.0f * velRange * velCurve);
+    // Resultado: vel=0 → 1-amount, vel=64 → 1.0, vel=127 → 1+amount
 }
-
-
-
 
 void Synth::noteOn(int note, int velocity)
 {
@@ -345,104 +516,84 @@ void Synth::noteOn(int note, int velocity)
 
 void Synth::noteOff(int note)
 {
-    // actualiza key tracking
+    // Actualizar key tracking (remover nota del stack)
     releaseKey(note);
-    
+
+    // ========================================================================
+    // MODO MONO
+    // ========================================================================
     if (numVoices == 1)
     {
-        // Si la nota liberada era la que estaba asignada a la voz mono:
-        if (voices[0].note == note)
-        {
-            const int next = topKey(); // última tecla aún presionada, o -1
+        // Solo procesar si la nota que suena es la que estamos soltando
+        if (voices[0].note != note)
+            return;  // Esta nota no está sonando, ignorar
 
-            if (next >= 0)
-            {
-                // seguir tocando con la nota siguiente sin retrigger (legato)
-                restartMonoVoice(next, 0);
-            }
-            else
-            {
-                // no hay teclas: release real
-                if (sustainPedalPressed)
-                {
-                    voices[0].note = SUSTAIN; // con sustain
-                }
-                else
-                {
-                    voices[0].release();
-                    voices[0].note = -1; // NO 0
-                }
-            }
+        // Verificar si hay otra tecla aún presionada
+        const int topNote = topKey();  // última tecla presionada o -1
+
+        if (topNote >= 0)
+        {
+            // HAY otra tecla presionada: cambiar a esa nota (legato)
+            // IMPORTANTE: velocity=0 indica que es un cambio legato sin retriggear
+            restartMonoVoice(topNote, 0);
+            return;
+        }
+
+        // NO hay otras teclas presionadas: hacer release
+        if (!sustainPedalPressed)
+        {
+            // Sin pedal: release inmediato
+            voices[0].release();
+        }
+        else
+        {
+            // Con pedal: marcar como "released" para release posterior
+            voices[0].released = true;
         }
 
         return;
     }
 
-    /*
-    if (numVoices == 1)
+    // ========================================================================
+    // MODO POLY
+    // ========================================================================
+
+    // Buscar TODAS las voces que están tocando esta nota
+    // (puede haber múltiples si se retriggereó la misma nota)
+    for (int v = 0; v < MAX_VOICES; ++v)
     {
-        // libera la voz 0 si es esa nota
-        if (voices[0].note == note)
+        Voice& voice = voices[v];
+
+        // Si esta voz está tocando la nota que soltamos
+        if (voice.note == note)
         {
-            if (sustainPedalPressed)
-                voices[0].note = SUSTAIN;
+            if (!sustainPedalPressed)
+            {
+                // Sin pedal: release inmediato
+                voice.release();
+            }
             else
             {
-                voices[0].release();
-                voices[0].note = 0; // clave para que el próximo noteOn NO sea legato
-            }
-
-            int queued = nextQueuedNote();
-            if (queued > 0)
-                restartMonoVoice(queued, -1);
-        }
-
-        // además, limpia cualquier nota en la cola
-        for (int v = 1; v < MAX_VOICES; ++v)
-            if (voices[v].note == note) voices[v].note = 0;
-
-        return;
-    }
-    */
-    /*
-    if ((numVoices == 1) && (voices[0].note == note))
-    {
-        int queuedNote = nextQueuedNote();
-        if (queuedNote > 0)
-        {
-            restartMonoVoice(queuedNote, -1);
-        }
-    }
-    */
-
-    // --- POLY ---
-    for (int v = 0; v < MAX_VOICES; v++) 
-    {
-        if (voices[v].note == note) 
-        {
-            if (sustainPedalPressed) 
-            {
-                voices[v].note = SUSTAIN;
-            }
-            else {
-                voices[v].release();
-                voices[v].note = -1;
+                // Con pedal: marcar como "released" para release posterior
+                voice.released = true;
             }
         }
     }
 }
 
-
-
-
 void Synth::allocateResources(double sampleRate_, int /*samplesPerBlock*/)
 {
     sampleRate = static_cast<float>(sampleRate_);
+    setFilterType(filterType);
     outputLevelSmoother.reset(sampleRate_, 0.02);
     for (int v = 0; v < MAX_VOICES; ++v)
     {
         voices[v].osc1.prepare(sampleRate);
         voices[v].osc2.prepare(sampleRate);
+        voices[v].osc1.setWaveType(osc1Wave);
+        voices[v].osc2.setWaveType(osc2Wave);
+        if (voices[v].filter)                // <-- defensivo
+            voices[v].filter->prepare(sampleRate);
         voices[v].reset(); // opcional pero recomendable al preparar
     }  
     
@@ -452,7 +603,6 @@ void Synth::allocateResources(double sampleRate_, int /*samplesPerBlock*/)
     lfo.reset();
     lfoCounter = 0;
     lfoPitchMul = 1.0f;
-
 }
 /*
 void Synth::deallocateResources()
@@ -474,6 +624,10 @@ void Synth::reset()
     lastNote = -1;
     keyDown.fill(false);
     keyStackSize = 0;
+    //aftertouch = 0.0f;
+    cc.filterPlus = 0.0f;
+    cc.filterMinus = 0.0f;
+    filterZipSemis = 0.0f;
 }
 
 void Synth::render(float** outputBuffers, int sampleCount)
@@ -507,7 +661,8 @@ void Synth::render(float** outputBuffers, int sampleCount)
             // Vibrato depth modulado por Mod Wheel (CC1)
             const float baseVibratoSemis = lfoDepthSemis;     // parámetro APVTS
             const float modWheelCurved = cc.modWheel * cc.modWheel;
-            const float effectiveVibratoSemis = baseVibratoSemis * modWheelCurved;
+            constexpr float kModWheelMaxSemis = 2.0f;
+            const float effectiveVibratoSemis = baseVibratoSemis + (kModWheelMaxSemis * modWheelCurved);
 
             const float vibratoPitchMul = std::exp2((lfoSine * effectiveVibratoSemis) / 12.0f);
             /*
@@ -521,6 +676,19 @@ void Synth::render(float** outputBuffers, int sampleCount)
             const float totalPwmDepth = juce::jlimit(0.0f, 0.45f, pwmDepth);
             const float pwmWidth = juce::jlimit(0.05f, 0.95f, 0.5f + lfoSine * totalPwmDepth);
 
+            // --- MODULACIÓN GLOBAL (en semitonos) ---
+            const float filterCtlSemis = 12.0f * (cc.filterPlus - cc.filterMinus);
+            const float pressureSemis = 12.0f * cc.aftertouch;
+            const float lfoSemis = (filterLFODepthSemis + pressureSemis) * lfoSine;
+
+            const float filterModSemisTarget = filterCtlSemis + lfoSemis;
+
+            // --- SMOOTHING GLOBAL (una sola vez) ---
+            const float dt = float(LFO_MAX) / sampleRate;
+            const float tau = 0.02f;
+            const float a = 1.0f - std::exp(-dt / tau);
+
+            filterZipSemis += a * (filterModSemisTarget - filterZipSemis);
             // actualizar voces activas SOLO cuando el LFO cambia
             for (int v = 0; v < MAX_VOICES; ++v)
             {
@@ -538,7 +706,74 @@ void Synth::render(float** outputBuffers, int sampleCount)
                 // 3) PWM (si aplica)
                 if (pwmDepth > 0.0f)
                     voice.osc2.setPulseWidth(pwmWidth);
-            }
+                // 4) FILTRO (NUEVO)
+                // Base cutoff modulada por CC + key tracking
+                //const float noteFreq = voice.freqCurrent;
+                //const float keyTrackAmount = 0.3f;  // 0 = sin tracking, 1 = tracking total
+
+                // Base desde APVTS modulada multiplicativamente por CC
+                //float cutoffHz = filterCutoff * (1.0f + 2.0f * cc.brightness)  // x1 a x3
+                //    + noteFreq * keyTrackAmount;
+                // 
+                // Base cutoff modulado por CC brightness
+                /*
+                float baseCutoff = filterCutoff * (1.0f + 2.0f * cc.brightness);  // x1 a x3
+
+                // Aplicar key tracking usando la nota MIDI
+                float cutoffHz = calculateKeyTrackedCutoff(voice.note, baseCutoff);
+                // offset manual del cutoff (como keytracking, NO oscilatorio)
+                const float filterCtlSemis = 12.0f * (cc.filterPlus - cc.filterMinus);
+                cutoffHz *= std::exp2(filterCtlSemis / 12.0f);
+                // LFO + aftertouch (oscilatorio)
+                const float pressure = cc.aftertouch;                 // 0..1
+                const float pressureSemis = 12.0f * pressure;
+                const float filterModSemis = (filterLFODepthSemis + pressureSemis) * lfoSine;
+                cutoffHz *= std::exp2(filterModSemis / 12.0f);
+                cutoffHz /= pitchBend;
+                cutoffHz = std::clamp(cutoffHz, 80.0f, 0.45f * sampleRate);
+
+                // Resonancia base + CC
+                float Q = filterResonance + 5.0f * cc.resonance;  // +0 a +5
+                Q = std::clamp(Q, 0.5f, 10.0f);
+                
+                const float dt = float(LFO_MAX) / sampleRate;  // sampleRate real del motor
+                const float tau = 0.02f;                       // 20 ms (ajusta)
+                const float a = 1.0f - std::exp(-dt / tau);
+
+                if (voice.cutoffZipHz <= 0.0f) voice.cutoffZipHz = cutoffHz; // init
+                voice.cutoffZipHz += a * (cutoffHz - voice.cutoffZipHz);
+
+                voice.setFilter(cutoffHz, Q);
+                */
+                // --- FILTRO ---
+                float baseCutoff = filterCutoff * (1.0f + 2.0f * cc.brightness);
+                float cutoffHz = calculateKeyTrackedCutoff(voice.note, baseCutoff);
+
+                // aplica modulador suavizado (incluye CC +/- + LFO + aftertouch)
+                cutoffHz *= std::exp2(filterZipSemis / 12.0f);
+
+                // “detalle pitch bend” estilo libro
+                cutoffHz /= pitchBend;
+
+                cutoffHz = std::clamp(cutoffHz, 80.0f, 0.45f * sampleRate);
+
+                float res01 = std::clamp(filterResonance + 0.5f * cc.resonance, 0.0f, 1.0f);
+                voice.setFilter(cutoffHz, res01);
+                /*
+                float Q = filterResonance + 5.0f * cc.resonance;
+                Q = std::clamp(Q, 0.5f, 10.0f);
+
+                const float normalizedResonance = (Q - 0.5f) / (10.0f - 0.5f);
+
+                const float fe = voice.filterEnv.nextValue();
+                cutoffHz *= std::exp2((fe * filterEnvAmountSemis) / 12.0f);
+                //cutoffHz *= std::exp2((fe * filterEnvAmountSemis * voice.filterEnvDepthMultiplier) / 12.0f);
+
+
+                voice.setFilter(cutoffHz, normalizedResonance);
+                */
+
+            };
         }
 
         const float noise = noiseGen.nextValue() * noiseMix;
@@ -556,13 +791,7 @@ void Synth::render(float** outputBuffers, int sampleCount)
                 outR += mono * voice.panRight;
             }
         }
-
-        float driveL = outL * volumeTrim;
-        float driveR = outR * volumeTrim;
-
-        outL = driveL / (1.0f + std::abs(driveL));
-        outR = driveR / (1.0f + std::abs(driveR));
-
+       
         const float gain = outputLevelSmoother.getNextValue();
         outL *= gain;
         outR *= gain;
@@ -573,9 +802,15 @@ void Synth::render(float** outputBuffers, int sampleCount)
         outL *= expr;
         outR *= expr;
 
+        float driveL = outL * volumeTrim;
+        float driveR = outR * volumeTrim;
+
+        outL = driveL / (1.0f + std::abs(driveL));
+        outR = driveR / (1.0f + std::abs(driveR));
+
         if (outputBufferRight != nullptr)
         {
-            outputBufferLeft[sample]  = outL;
+            outputBufferLeft[sample] = outL;
             outputBufferRight[sample] = outR;
         }
         else
@@ -649,6 +884,12 @@ void Synth::midiMessage(uint8_t data0, uint8_t data1, uint8_t data2)
         case 0xB0:
             controlChange(data1, data2);
             break;
+        // Channel Pressure
+        case 0xD0:
+        {
+            cc.aftertouch = (data1 & 0x7F) / 127.0f;;        // o variable dedicada
+            break;
+        }
     }
 }
 
@@ -737,4 +978,28 @@ bool Synth::legatoOnThisNoteOn(int note) const
     if (keyStackSize == 0) return false;
     if (keyStackSize == 1 && noteIsDown(note)) return false; // repeticion
     return true;
+}
+
+void Synth::setFilterType(FilterType type)
+{
+    const bool pointersReady = (voices[0].filter != nullptr);
+    if (filterType == type && pointersReady)
+        return;
+
+    filterType = type;
+
+    for (int v = 0; v < MAX_VOICES; ++v)
+    {
+        Voice& voice = voices[v];
+
+        switch (filterType)
+        {
+        case FILTER_SVF:  voice.filter = &voice.svfFilter;  break;
+        case FILTER_MOOG: voice.filter = &voice.moogFilter; break;
+        default:          voice.filter = &voice.svfFilter;  break;
+        }
+
+        voice.filter->setSampleRate(sampleRate);
+        voice.filter->reset();
+    }
 }
