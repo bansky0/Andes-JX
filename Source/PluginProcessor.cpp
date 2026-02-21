@@ -374,15 +374,7 @@ void AndesJXAudioProcessor::update()
     float r = juce::jmax(1.0f, envRelease); 
     synth.envRelease = std::exp(-inverseSampleRate * std::exp(5.5f - 0.075f * r));
 
-    /*
-    if (envRelease < 1.0f) {
-        synth.envRelease = 0.75f;
-    }
-    else {
-        synth.envRelease = std::exp(-inverseSampleRate * std::exp(5.5f - 0.075f * envRelease));
-    }
-    */
-
+    
     synth.oscMix = oscMixParam->get() / 100.0f;
 
     float noiseMix = noiseParam->get() / 100.0f;
@@ -404,7 +396,7 @@ void AndesJXAudioProcessor::update()
 
     float gain = juce::Decibels::decibelsToGain(outputLevelParam->get());
     synth.outputLevelSmoother.setTargetValue(gain);
-    //synth.outputLevel = juce::Decibels::decibelsToGain(outputLevelParam->get());
+
        
     float filterVelocity = filterVelocityParam->get();
     if (filterVelocity <-90.0f) {
@@ -444,10 +436,7 @@ void AndesJXAudioProcessor::update()
 
     // Calcular valores al cuadrado para vibrato en semitonos
     synth.lfoDepthSemis = vibratoValue * vibratoValue * 0.0002f; // vibrato
-    //synth.pwmDepth = 0.0f;
-    //synth.pwmDepth = std::abs(vibratoValue) * 0.01f;
-    //synth.pwmDepth = vibratoValue * vibratoValue * 0.01f;      // PWM
-    // Si el parámetro es negativo, usar PWM en lugar de vibrato
+ 
     if (vibratoValue < 0.0f) {
         synth.lfoDepthSemis = 0.0f;  // Apagar vibrato
         synth.pwmDepth = std::abs(vibratoValue) * 0.01f;
@@ -456,8 +445,6 @@ void AndesJXAudioProcessor::update()
     {
         synth.pwmDepth = 0;
     }
-    //synth.lfoDepthSemis = 0.02f * lfoDepthParam->get(); // 0..2 semitonos
-    //synth.lfoDepthSemis = 2.0f; // medio semitono, solo para test
 
     // FILTRO - Convertir de % a valores reales
     //float filterFreqPercent = filterFreqParam->get();  // 0-100%
@@ -467,15 +454,13 @@ void AndesJXAudioProcessor::update()
     synth.filterLFODepthSemis = 2.5f * filterLFO * filterLFO;        // 0..2.5 (curva parabólica)
 
     // Mapeo exponencial para frecuencia (más control en graves)
-    //synth.filterCutoff = 80.0f * std::exp(6.0f * filterFreqPercent / 100.0f);  // 80Hz - 32kHz
-    //synth.filterCutoff = juce::jlimit(80.0f, 20000.0f, synth.filterCutoff);
+
     const float x = juce::jlimit(0.0f, 1.0f, filterFreqParam->get() / 100.0f);
     const float minHz = 80.0f;
     const float maxHz = 20000.0f;
     synth.filterCutoff = minHz * std::exp(std::log(maxHz / minHz) * x);
 
     // Mapeo lineal para resonancia
-    //synth.filterResonance = 0.5f + 4.5f * (filterResoPercent / 100.0f);  // 0.5 -
     float x1 = juce::jlimit(0.0f, 1.0f, filterResoPercent / 100.0f);
     synth.filterResonance = x1 * x1;
 
@@ -489,11 +474,7 @@ void AndesJXAudioProcessor::update()
     synth.filterEnvAttack = std::exp(-inverseSampleRate * std::exp(5.5f - 0.075f * filterAttackParam->get()));
     synth.filterEnvDecay = std::exp(-inverseSampleRate * std::exp(5.5f - 0.075f * filterDecayParam->get()));
     synth.filterEnvSustain = filterSustainParam->get() / 100.0f;
-    /*
-    float fr = filterReleaseParam->get();
-    if (fr < 1.0f) synth.filterEnvRelease = 0.75f;
-    else          synth.filterEnvRelease = std::exp(-inverseSampleRate * std::exp(5.5f - 0.075f * fr));
-    */
+
     // Actualizar tipo de filtro
     const int filterTypeIndex = filterTypeParam->getIndex();
     synth.setFilterType(static_cast<Synth::FilterType>(filterTypeIndex));
