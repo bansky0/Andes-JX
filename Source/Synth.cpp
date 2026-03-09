@@ -1,10 +1,26 @@
 /*
   ==============================================================================
-
     Synth.cpp
-    Created: 10 Nov 2025 6:45:11pm
-    Author:  Jhonatan
 
+    ESP:
+    Implementación del motor del sintetizador:
+      - Selección de waves de osciladores (aplicado a todas las voces)
+      - Key tracking del cutoff del filtro
+      - Lógica mono/legato (key stack) y glide
+      - Asignación de voces (voice allocation)
+      - Render de audio por bloque: LFO decimado + modulación + filtro + mezcla
+      - Router MIDI: note on/off, pitch bend, CC, aftertouch
+      - Selección de tipo de filtro por voz (SVF / Moog)
+
+    ENG:
+    Synth engine implementation:
+      - Oscillator wave selection (applied to all voices)
+      - Filter cutoff key tracking
+      - Mono/legato logic (key stack) and glide
+      - Voice allocation
+      - Block audio render: decimated LFO + modulation + filter + mixing
+      - MIDI router: note on/off, pitch bend, CC, aftertouch
+      - Per-voice filter type selection (SVF / Moog)
   ==============================================================================
 */
 
@@ -24,6 +40,12 @@ Synth::~Synth()
 {
 
 }
+//------------------------------------------------------------------------------
+// ESP: Selección de forma de onda. Se aplica a TODAS las voces (incluidas futuras notas).
+//      Esto mantiene coherencia global del patch (no por-voz).
+// ENG: Waveform selection. Applied to ALL voices (including future notes).
+//      Keeps the patch globally consistent (not per-voice).
+//------------------------------------------------------------------------------
 
 void Synth::setOsc1Wave(WaveType wt)
 {
@@ -38,7 +60,13 @@ void Synth::setOsc2Wave(WaveType wt)
     for (int v = 0; v < MAX_VOICES; ++v)
         voices[v].osc2.setWaveType(osc2Wave);
 }
-
+//------------------------------------------------------------------------------
+// ESP: Key tracking del cutoff: ajusta el cutoff base según la distancia en semitonos
+//      respecto a una nota central (filterKeycenterNote) y un amount (filterKeytrackAmount).
+//      Idea: “notas más altas → cutoff más alto” (si amount > 0).
+// ENG: Filter cutoff key tracking: scales the base cutoff by semitone distance from
+//      a key center (filterKeycenterNote) and an amount (filterKeytrackAmount).
+//------------------------------------------------------------------------------
 float Synth::calculateKeyTrackedCutoff(int midiNote, float baseCutoff) const
 {
     // Calcular distancia desde el centro en semitonos
@@ -54,40 +82,24 @@ float Synth::calculateKeyTrackedCutoff(int midiNote, float baseCutoff) const
 
     return trackedCutoff;
 }
-
+//------------------------------------------------------------------------------
+// ESP: Estado de controles de performance (CC/aftertouch). No escribe a parámetros del host;
+//      solo actualiza el estado interno usado durante render().
+// ENG: Performance control state (CC/aftertouch). Does not write host parameters;
+//      only updates internal runtime state used during render().
+//------------------------------------------------------------------------------
 void Synth::setCCState(const CCState& s)
 {
     cc = s;
     sustainPedalPressed = cc.sustain;
 }
 
-/*
-int Synth::nextQueuedNote()
-{
-    int held = 0;
-    for (int v = MAX_VOICES - 1; v > 0; v--) 
-    {
-        if (voices[v].note > 0) { held = v; }
-    }
-    if (held > 0) 
-    {
-        int note = voices[held].note;
-        voices[held].note = 0;
-        return note;
-    }
-    return 0;
-    
-}
-*/
-/*
-void Synth::shiftQueuedNotes()
-{
-    for (int tmp = MAX_VOICES - 1; tmp > 0; tmp--) {
-        voices[tmp].note = voices[tmp - 1].note;
-        //voices[tmp].release();
-    }
-}
-*/
+//------------------------------------------------------------------------------
+// ESP: Reinicio de la voz mono (v=0). Se actualiza el objetivo de frecuencia y se decide
+//      si hay glide según glideMode. Esta función es crítica para el “feeling” legato.
+// ENG: Monophonic voice restart (v=0). Updates target frequency and decides whether
+//      to glide based on glideMode. Critical for legato feel.
+//------------------------------------------------------------------------------
 void Synth::restartMonoVoice(int note, int velocity)
 {
     Voice& voice = voices[0];
@@ -124,7 +136,8 @@ void Synth::restartMonoVoice(int note, int velocity)
     voice.osc2.setFrequency(voice.freqCurrent * pitchBend * detune * lfoPitchMul);
 
     // ============================================================
-    // MEJORA CLAVE: Manejo inteligente del envelope para legato
+// ESP: En legato suele convenir NO re-disparar ataque completo (evita “clicks” y mantiene fraseo).
+// ENG: In legato it’s often desirable NOT to fully retrigger the attack (avoids clicks, keeps phrasing).
     // ============================================================
     Envelope& env = voice.env;
 
@@ -239,31 +252,7 @@ void Synth::controlChange(uint8_t data1, uint8_t data2)
         break;
     }
 }
-/*
-void Synth::controlChange(uint8_t data1, uint8_t data2)
-{
-    if (data1 >= 0x78)
-    {
-        for (int v = 0; v < MAX_VOICES; ++v)
-            voices[v].reset();
-        sustainPedalPressed = false;
-    }
-    switch (data1)
-    {
-    case 0x4A: // CC74 usualmente es cutoff/brightness, pero el libro usa 0x4A como “Filter +”
-    {
-        cc.filterPlus = data2 / 127.0f;
-        break;
-    }
-    case 0x4B: // “Filter -”
-    {
-        cc.filterMinus = data2 / 127.0f;
-        break;
-    }
-    default: break;
-    }
-}
-*/
+
 float Synth::calcBaseFreq(int v, int note) const
 {
     // offset en semitonos: note + (ANALOG * v)
@@ -349,11 +338,6 @@ void Synth::startVoice(int v, int note, int velocity)
         if (glideMode == 2) shouldGlide = true;
         else if (glideMode == 1) shouldGlide = wasLegato;
     }
-    /*
-    if (glideMode == 2) shouldGlide = true;           // Always
-    else if (glideMode == 1) shouldGlide = wasLegato; // Legato
-    // glideMode == 0 => Off
-    */
 
 
     voice.glideRateThisNote = shouldGlide ? glideRate : 1.0f;
@@ -373,18 +357,13 @@ void Synth::startVoice(int v, int note, int velocity)
         if (numVoices == 1) {
             lastNote = note;
         }
-        /*
-        lastNote = note;
-        */
+        
         // osciladores arrancan con freqCurrent (como ya tienes)
         voice.osc1.setFrequency(voice.freqCurrent * pitchBend);
         voice.osc1.reset();
         voice.osc2.setFrequency(voice.freqCurrent * pitchBend * detune);
         voice.osc2.reset();
     
-    //float vel = 0.004f * float((velocity + 64) * (velocity + 64))- 8.0f;
-    //voice.velocityGain = 0.01f * vel;
-    // velocity viene 0..127
         const float velNorm = juce::jlimit(0.0f, 1.0f, (float)velocity / 127.0f);
 
         // curva musical típica (más control en valores bajos)
@@ -428,11 +407,7 @@ void Synth::startVoice(int v, int note, int velocity)
 
     fe.attack();
 
-    // Modular profundidad del filter envelope según velocity
-    //const float velNorm = juce::jlimit(0.0f, 1.0f, (float)velocity / 127.0f);
-    //const float velCurve = velNorm * velNorm;  // curva cuadrática para mejor respuesta
-    //const float amt = velocitySensitivity;
-    //voice.velocityGain = (1.0f - amt) + amt * velCurve;
+
 
     // Filtro (tu implementación actual: escala profundidad del filter env)
     voice.filterEnvDepthMultiplier = (1.0f - filterVelocityAmount) + filterVelocityAmount * velCurve;
@@ -471,45 +446,7 @@ void Synth::noteOn(int note, int velocity)
 
     int v = findFreeVoice(note);
     startVoice(v, note, velocity);
-    /*
-    if (numVoices == 1)
-    {
-        // Legato SOLO si aún hay una nota "held"
-        if (voices[0].note > 0)
-        {
-            shiftQueuedNotes();
-            restartMonoVoice(note, velocity);   // NO reinicia attack
-        }
-        else
-        {
-            startVoice(0, note, velocity);      // SÍ reinicia attack
-        }
-        return;
-    }
-    */
-
     
-        /*
-        if (voices[0].env.isActive())
-        {
-            if (voices[0].note > 0)
-            {
-                shiftQueuedNotes();
-            }
-            // Legato
-            restartMonoVoice(note, velocity);
-        }
-        else
-        {
-            startVoice(0, note, velocity);
-        }
-    }
-    else
-    {
-        int v = findFreeVoice(note);
-        startVoice(v, note, velocity);
-    }
-    */
 }
 
 
@@ -581,6 +518,11 @@ void Synth::noteOff(int note)
     }
 }
 
+//------------------------------------------------------------------------------
+// ESP: Preparación por cambio de sampleRate. Inicializa osciladores, filtros, noise y LFO.
+//      Ojo: aquí es donde un “touch” accidental puede romper el build (y tu paz mental).
+// ENG: Preparation on sampleRate change. Initializes oscillators, filters, noise and LFO.
+//------------------------------------------------------------------------------
 void Synth::allocateResources(double sampleRate_, int /*samplesPerBlock*/)
 {
     sampleRate = static_cast<float>(sampleRate_);
@@ -611,6 +553,10 @@ void Synth::deallocateResources()
 }
 */
 
+//------------------------------------------------------------------------------
+// ESP: Reset global del motor. Limpia estado de voces, LFO y tracking de teclado.
+// ENG: Global engine reset. Clears voice, LFO and keyboard-tracking state.
+//------------------------------------------------------------------------------
 void Synth::reset()
 {
     for (int v = 0; v < MAX_VOICES; ++v) 
@@ -629,7 +575,16 @@ void Synth::reset()
     cc.filterMinus = 0.0f;
     filterZipSemis = 0.0f;
 }
-
+//------------------------------------------------------------------------------
+// ESP: Render de audio por bloque. Estructura general:
+//      (1) Pre-update por voz (paneo/anchura) 1 vez por bloque
+//      (2) Loop por muestra: update de LFO (a menor tasa) + modulación + mezcla + protección
+//      (3) Cleanup de voces inactivas + limiter de seguridad
+// ENG: Block audio rendering:
+//      (1) Per-voice pre-update (panning/width) once per block
+//      (2) Per-sample loop: lower-rate LFO update + modulation + mixing + safety
+//      (3) Cleanup inactive voices + safety limiter
+//------------------------------------------------------------------------------
 void Synth::render(float** outputBuffers, int sampleCount)
 {
     float* outputBufferLeft  = outputBuffers[0];
@@ -644,15 +599,16 @@ void Synth::render(float** outputBuffers, int sampleCount)
             voice.stereoWidth = stereoWidth;
             voice.updatePanning(v);
 
-            //voice.osc1.setFrequency(voice.freqCurrent * pitchBend * lfoPitchMul);
-            //voice.osc2.setFrequency(voice.freqCurrent * pitchBend * detune * lfoPitchMul);
         }
     }
 
     // 2) Render samples
     for (int sample = 0; sample < sampleCount; ++sample)
     {
-        // ---- LFO update cada 32 samples ----
+// ESP: LFO “decimado”: se actualiza cada LFO_MAX samples para ahorrar CPU.
+//      Esto está bien para modulación lenta (vibrato, PWM, filtro suave).
+// ENG: Decimated LFO: updated every LFO_MAX samples to save CPU.
+//      Suitable for slow modulation (vibrato, PWM, smooth filter moves).
         if (++lfoCounter >= LFO_MAX)
         {
             lfoCounter = 0;
@@ -665,11 +621,9 @@ void Synth::render(float** outputBuffers, int sampleCount)
             const float effectiveVibratoSemis = baseVibratoSemis + (kModWheelMaxSemis * modWheelCurved);
 
             const float vibratoPitchMul = std::exp2((lfoSine * effectiveVibratoSemis) / 12.0f);
-            /*
-            const float modWheelSemis = modWheel * 12.0f;
-            const float totalVibratoSemis = lfoDepthSemis + modWheelSemis;
-            const float vibratoPitchMul = std::exp2((lfoSine * totalVibratoSemis) / 12.0f);
-            */
+
+// ESP: lfoPitchMul es un multiplicador de pitch (exp2(semitonos/12)) aplicado a osciladores.
+// ENG: lfoPitchMul is a pitch multiplier (exp2(semitones/12)) applied to oscillators.
 
             lfoPitchMul = vibratoPitchMul;
 
@@ -684,9 +638,12 @@ void Synth::render(float** outputBuffers, int sampleCount)
             const float filterModSemisTarget = filterCtlSemis + lfoSemis;
 
             // --- SMOOTHING GLOBAL (una sola vez) ---
+// ESP: Zip smoothing (one-pole) para evitar zipper noise en cutoff cuando la modulación cambia “a saltos”.
+// ENG: One-pole smoothing to prevent zipper noise on cutoff when modulation changes in steps.
             const float dt = float(LFO_MAX) / sampleRate;
             const float tau = 0.02f;
             const float a = 1.0f - std::exp(-dt / tau);
+
 
             filterZipSemis += a * (filterModSemisTarget - filterZipSemis);
             // actualizar voces activas SOLO cuando el LFO cambia
@@ -696,7 +653,7 @@ void Synth::render(float** outputBuffers, int sampleCount)
                 if (!voice.env.isActive())
                     continue;
 
-                // 1) glide one-pole (libro)star
+                // 1) glide one-pole 
                 voice.freqCurrent += voice.glideRateThisNote * (voice.freqTarget - voice.freqCurrent);
 
                 // 2) aplicar a osciladores
@@ -706,45 +663,7 @@ void Synth::render(float** outputBuffers, int sampleCount)
                 // 3) PWM (si aplica)
                 if (pwmDepth > 0.0f)
                     voice.osc2.setPulseWidth(pwmWidth);
-                // 4) FILTRO (NUEVO)
-                // Base cutoff modulada por CC + key tracking
-                //const float noteFreq = voice.freqCurrent;
-                //const float keyTrackAmount = 0.3f;  // 0 = sin tracking, 1 = tracking total
 
-                // Base desde APVTS modulada multiplicativamente por CC
-                //float cutoffHz = filterCutoff * (1.0f + 2.0f * cc.brightness)  // x1 a x3
-                //    + noteFreq * keyTrackAmount;
-                // 
-                // Base cutoff modulado por CC brightness
-                /*
-                float baseCutoff = filterCutoff * (1.0f + 2.0f * cc.brightness);  // x1 a x3
-
-                // Aplicar key tracking usando la nota MIDI
-                float cutoffHz = calculateKeyTrackedCutoff(voice.note, baseCutoff);
-                // offset manual del cutoff (como keytracking, NO oscilatorio)
-                const float filterCtlSemis = 12.0f * (cc.filterPlus - cc.filterMinus);
-                cutoffHz *= std::exp2(filterCtlSemis / 12.0f);
-                // LFO + aftertouch (oscilatorio)
-                const float pressure = cc.aftertouch;                 // 0..1
-                const float pressureSemis = 12.0f * pressure;
-                const float filterModSemis = (filterLFODepthSemis + pressureSemis) * lfoSine;
-                cutoffHz *= std::exp2(filterModSemis / 12.0f);
-                cutoffHz /= pitchBend;
-                cutoffHz = std::clamp(cutoffHz, 80.0f, 0.45f * sampleRate);
-
-                // Resonancia base + CC
-                float Q = filterResonance + 5.0f * cc.resonance;  // +0 a +5
-                Q = std::clamp(Q, 0.5f, 10.0f);
-                
-                const float dt = float(LFO_MAX) / sampleRate;  // sampleRate real del motor
-                const float tau = 0.02f;                       // 20 ms (ajusta)
-                const float a = 1.0f - std::exp(-dt / tau);
-
-                if (voice.cutoffZipHz <= 0.0f) voice.cutoffZipHz = cutoffHz; // init
-                voice.cutoffZipHz += a * (cutoffHz - voice.cutoffZipHz);
-
-                voice.setFilter(cutoffHz, Q);
-                */
                 // --- FILTRO ---
                 float baseCutoff = filterCutoff * (1.0f + 2.0f * cc.brightness);
                 float cutoffHz = calculateKeyTrackedCutoff(voice.note, baseCutoff);
@@ -759,20 +678,7 @@ void Synth::render(float** outputBuffers, int sampleCount)
 
                 float res01 = std::clamp(filterResonance + 0.5f * cc.resonance, 0.0f, 1.0f);
                 voice.setFilter(cutoffHz, res01);
-                /*
-                float Q = filterResonance + 5.0f * cc.resonance;
-                Q = std::clamp(Q, 0.5f, 10.0f);
-
-                const float normalizedResonance = (Q - 0.5f) / (10.0f - 0.5f);
-
-                const float fe = voice.filterEnv.nextValue();
-                cutoffHz *= std::exp2((fe * filterEnvAmountSemis) / 12.0f);
-                //cutoffHz *= std::exp2((fe * filterEnvAmountSemis * voice.filterEnvDepthMultiplier) / 12.0f);
-
-
-                voice.setFilter(cutoffHz, normalizedResonance);
-                */
-
+ 
             };
         }
 
@@ -781,6 +687,8 @@ void Synth::render(float** outputBuffers, int sampleCount)
         float outL = 0.0f;
         float outR = 0.0f;
 
+// ESP: Mezcla por voz: Voice::render() entrega mono; luego se panea con panLeft/panRight.
+// ENG: Per-voice mix: Voice::render() returns mono; then panned using panLeft/panRight.
         for (int v = 0; v < MAX_VOICES; ++v)
         {
             Voice& voice = voices[v];
@@ -804,7 +712,8 @@ void Synth::render(float** outputBuffers, int sampleCount)
 
         float driveL = outL * volumeTrim;
         float driveR = outR * volumeTrim;
-
+// ESP: Soft clipper simple para “pegar” picos sin un limiter pesado.
+// ENG: Simple soft clipper to tame peaks without a heavy limiter.
         outL = driveL / (1.0f + std::abs(driveL));
         outR = driveR / (1.0f + std::abs(driveR));
 
@@ -841,8 +750,12 @@ void Synth::render(float** outputBuffers, int sampleCount)
 }
 
 
-
-
+//------------------------------------------------------------------------------
+// ESP: Router MIDI. Decodifica el status (data0) y llama a noteOn/noteOff/controlChange.
+//      Pitch bend se aplica como multiplicador exponencial y se propaga a voces activas.
+// ENG: MIDI router. Decodes status (data0) and calls noteOn/noteOff/controlChange.
+//      Pitch bend is an exponential multiplier propagated to active voices.
+//------------------------------------------------------------------------------
 void Synth::midiMessage(uint8_t data0, uint8_t data1, uint8_t data2)
 {
     switch (data0 & 0xF0) {
@@ -868,6 +781,8 @@ void Synth::midiMessage(uint8_t data0, uint8_t data1, uint8_t data2)
             pitchBend = std::exp(0.000014102f * float((data1 + 128 * data2) - 8192));
             //break;
             // Pitch bend en tiempo real: actualizar osciladores si hay nota activa
+// ESP: Pitch bend MIDI (14-bit) centrado en 8192. Se mapea a multiplicador exponencial.
+// ENG: MIDI pitch bend (14-bit) centered at 8192. Mapped to an exponential multiplier.
             for (int v = 0; v < MAX_VOICES; ++v)
             {
                 Voice& voice = voices[v];
@@ -915,18 +830,16 @@ void Synth::setPwmDepth(float depth)
     pwmDepth = depth;
 }
 
-
+//------------------------------------------------------------------------------
+// ESP: Key stack (seguimiento de teclado) para lógica mono/legato.
+//      Guarda el orden de las notas presionadas para recuperar la “top key” al soltar.
+// ENG: Key stack (keyboard tracking) for mono/legato logic.
+//      Preserves press order to recover the top key on release.
+//------------------------------------------------------------------------------
 bool Synth::isPlayingLegatoStyle() const
 {
     return keyStackSize > 1;
-    /*
-    int held = 0;
-    for (int i = 0; i < MAX_VOICES; ++i)
-    {
-        if (voices[i].note > 0) { held += 1; }
-    }
-    return held > 0;
-    */
+
 }
 
 bool Synth::noteIsDown(int note) const
@@ -979,9 +892,19 @@ bool Synth::legatoOnThisNoteOn(int note) const
     if (keyStackSize == 1 && noteIsDown(note)) return false; // repeticion
     return true;
 }
-
+//------------------------------------------------------------------------------
+// ESP: Selección del tipo de filtro por voz. Reasigna el puntero voice.filter y resetea.
+//      Importante: esto afecta cómo cada Voice procesa su audio internamente.
+// ENG: Per-voice filter type selection. Reassigns voice.filter pointer and resets.
+//------------------------------------------------------------------------------
 void Synth::setFilterType(FilterType type)
 {
+
+// ESP: Nota: setFilterType() ya recorre todas las voces; llamarlo dentro del loop es redundante,
+//      pero se deja así para no cambiar comportamiento.
+// ENG: Note: setFilterType() already loops over all voices; calling it inside this loop is redundant,
+//      but kept as-is to avoid behavior changes.
+
     const bool pointersReady = (voices[0].filter != nullptr);
     if (filterType == type && pointersReady)
         return;

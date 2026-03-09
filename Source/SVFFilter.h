@@ -1,15 +1,16 @@
 /*
   ==============================================================================
-
     SVFFilter.h
-    Created: 11 Feb 2026 4:49:15pm
-    Author:  Jhonatan
 
-    Wrapper para SVF que implementa IFilter
+    ESP:
+    Wrapper/adapter del filtro SVF para cumplir con la interfaz común de filtros (IFilter)
+utilizada por Voice. Encapsula la instancia SVF y traduce llamadas prepare/reset/setParams
+al formato esperado por el motor.
 
-    Adapta SVF existente para que sea compatible con
-    el sistema de filtros intercambiables.
-
+    ENG:
+    SVF wrapper/adapter that satisfies the common filter interface (IFilter) used by Voice.
+It encapsulates an SVF instance and routes prepare/reset/setParams calls in the format
+expected by the engine.
   ==============================================================================
 */
 
@@ -18,19 +19,35 @@
 #include "IFilter.h"
 #include "SVF.h"
 #include <algorithm>
+//------------------------------------------------------------------------------
+// ESP: Implementación SVF (State Variable Filter). Mantiene estado interno por voz
+//      y procesa audio sample-by-sample. Ideal para barridos suaves de cutoff.
+// ENG: SVF (State Variable Filter) implementation. Keeps per-voice internal state
+//      and processes audio sample-by-sample. Well suited for smooth cutoff sweeps.
+//------------------------------------------------------------------------------
+
 
 class SVFFilter : public IFilter
 {
 public:
     SVFFilter() = default;
+//------------------------------------------------------------------------------
+// ESP: Inicializa coeficientes/estado dependiente de sampleRate.
+// ENG: Initializes sample-rate dependent coefficients/state.
+//------------------------------------------------------------------------------
+
 
     void prepare(double newSampleRate) override
     {
-        //setSampleRate(static_cast<float>(newSampleRate));
         svf1.prepare(static_cast<float>(newSampleRate));
         svf2.prepare(static_cast<float>(newSampleRate));
         reset();
     }
+//------------------------------------------------------------------------------
+// ESP: Limpia memorias internas del filtro (integradores/delays).
+// ENG: Clears internal filter memories (integrators/delays).
+//------------------------------------------------------------------------------
+
 
     void reset() override
     {
@@ -65,8 +82,7 @@ public:
 
     float render(float input) override
     {
-        //return svf1.render(input);
-        //return svf2.render(input);
+
         float y = svf1.render(input);
         y = svf2.render(y);
 

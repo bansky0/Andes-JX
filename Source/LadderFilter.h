@@ -2,13 +2,39 @@
   ==============================================================================
 
     LadderFilter.h
-    Created: 11 Feb 2026 2:46:22pm
-    Author:  Jhonatan
 
+    ESP: 
+    Filtro ladder Moog basado en el paper de Antti Huovilainen's DAFx 2004:
+    "Non-Linear Digital Implementation of the Moog Ladder Filter"
+    https://dafx.de/paper-archive/2004/P_061.PDF
+    
+    Este tipo de filtro modela una topología analógica clásica basada en varias
+    etapas encadenadas, normalmente asociada a un comportamiento suave de cutoff,
+    resonancia musical y posible saturación/no linealidad según el diseño.
+
+    Este módulo actúa como bloque DSP reutilizable para filtrado por voz. Suele
+    usarse como base interna de filtros estilo Moog o variantes ladder similares.
+
+    Características:
+    - Auto-oscilación lowpass de 4 polos (24 dB/oct)
+    - Compensación de resonancia dependiente de frecuencia
+    - Interpolación lineal con 2x de sobremuestreo
+    - Saturación suave (tanh) por cada etapa
+    
+    
+    ENG:
+    
     Moog Ladder Filter based on Antti Huovilainen's DAFx 2004 paper:
     "Non-Linear Digital Implementation of the Moog Ladder Filter"
     https://dafx.de/paper-archive/2004/P_061.PDF
+    
+    This type of filter models a classic analog ladder topology based on several
+    cascaded stages, usually associated with smooth cutoff behavior, musical
+    resonance, and possible saturation/non-linearity depending on the design.
 
+    This module acts as a reusable DSP block for per-voice filtering. It is
+    commonly used as the internal basis for Moog-style or similar ladder filters.
+    
     Features:
     - 4-pole (24 dB/oct) lowpass with self-oscillation
     - Frequency-dependent resonance compensation
@@ -22,12 +48,21 @@
 
 #include <cmath>
 #include <algorithm>
-
+//------------------------------------------------------------------------------
+// ESP: Clase de filtro ladder. Mantiene el estado interno de sus etapas y
+//      procesa audio muestra a muestra.
+// ENG: Ladder filter class. Keeps internal stage state and processes audio
+//      sample-by-sample.
+//------------------------------------------------------------------------------
 class LadderFilter
 {
 public:
     LadderFilter() = default;
 
+//------------------------------------------------------------------------------
+// ESP: Resetea el estado interno de las etapas del filtro.
+// ENG: Resets the internal state of the filter stages.
+//------------------------------------------------------------------------------
     void reset()
     {
         std::fill(std::begin(y), std::end(y), 0.0f);

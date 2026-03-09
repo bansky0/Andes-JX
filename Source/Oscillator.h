@@ -1,16 +1,31 @@
 /*
   ==============================================================================
-
     Oscillator.h
-    Created: 15 Nov 2025 4:28:29pm
-    Author:  Valeria
 
+    ESP:
+    Interfaz de oscilador por voz (wrapper) sobre OscillatorPolyBLEP.
+    Encapsula la selección de forma de onda y el ruteo hacia el generador
+    band-limited (PolyBLEP) para minimizar aliasing en ondas con discontinuidades
+    (saw/square/PWM). Se usa típicamente dentro de Voice para generar muestras
+    por oscilador (osc1/osc2).
+
+    ENG:
+    Per-voice oscillator interface (wrapper) around OscillatorPolyBLEP.
+    Encapsulates waveform selection and routing into a band-limited (PolyBLEP)
+    generator to minimize aliasing for discontinuous waveforms (saw/square/PWM).
+    Typically used inside Voice to generate samples per oscillator (osc1/osc2).
   ==============================================================================
 */
 
 #pragma once
+
 #include "OscillatorPolyBLEP.h"
 
+//==============================================================================
+// ESP: Tipos de forma de onda soportados por el oscilador.
+//      SquarePWM usa ancho de pulso variable (pulse width) para timbre dinámico.
+// ENG: Supported oscillator waveforms.
+//      SquarePWM uses variable pulse width for dynamic timbre.
 enum class WaveType
 {
     Sine,
@@ -23,33 +38,60 @@ enum class WaveType
 class Oscillator
 {
 public:
+    //==========================================================================
+    // ESP: Ganancia base del oscilador (salida típica en [-1..1] * amplitude).
+    // ENG: Base oscillator gain (typical output in [-1..1] * amplitude).
     float amplitude = 1.0f;
 
+    //==========================================================================
+    // ESP: Inicializa dependencias con sampleRate (debe llamarse antes de renderizar).
+    // ENG: Initializes sample-rate dependent internals (must be called before rendering).
     void prepare(double sampleRate)
     {
         polyblep.prepare(sampleRate);
     }
 
+    //==========================================================================
+    // ESP: Configura la frecuencia fundamental (Hz).
+    // ENG: Sets fundamental frequency (Hz).
     void setFrequency(float freq)
     {
         polyblep.setFrequency(freq);
     }
 
+    //==========================================================================
+    // ESP: Selecciona la forma de onda a generar.
+    // ENG: Selects which waveform to generate.
     void setWaveType(WaveType type)
     {
         waveType = type;
     }
 
+    //==========================================================================
+    // ESP: Configura el ancho de pulso para SquarePWM (rango típico: 0..1).
+    //      Nota: el rango exacto/seguro depende de la implementación interna (evitar 0 o 1).
+    // ENG: Sets pulse width for SquarePWM (typical range: 0..1).
+    //      Note: exact safe range depends on the internal implementation (avoid 0 or 1).
     void setPulseWidth(float width)
     {
         polyblep.setPulseWidth(width);
     }
 
+    //==========================================================================
+    // ESP: Sincroniza la fase con otro oscilador (útil para hard-sync / reinicios coherentes).
+    // ENG: Phase-sync with another oscillator (useful for hard sync / coherent restarts).
     void syncPhase(const Oscillator& other)
     {
         polyblep.syncPhase(other.polyblep);
     }
 
+    //==========================================================================
+    // ESP: Devuelve la siguiente muestra del oscilador, según waveType.
+    //      El motor PolyBLEP genera versiones band-limited de ondas con bordes
+    //      abruptos para reducir aliasing.
+    // ENG: Returns the next oscillator sample, based on waveType.
+    //      The PolyBLEP engine generates band-limited versions of discontinuous
+    //      waveforms to reduce aliasing.
     float nextSample()
     {
         switch (waveType)
@@ -60,88 +102,27 @@ public:
             case WaveType::SquarePWM:   return polyblep.squarePWM();
             case WaveType::Triangle:    return polyblep.triangle();
         }
+
+        // ESP/ENG: Fallback defensivo (no debería ocurrir).
         return 0.0f;
     }
 
+    //==========================================================================
+    // ESP: Reinicia el estado interno (fase y acumuladores del motor).
+    // ENG: Resets internal state (phase and internal accumulators).
     void reset()
     {
         polyblep.reset();
     }
 
-
 private:
+    //==========================================================================
+    // ESP: Forma de onda actual (por defecto: Saw).
+    // ENG: Current waveform (default: Saw).
     WaveType waveType = WaveType::Saw;
+
+    //==========================================================================
+    // ESP: Motor DSP band-limited (PolyBLEP).
+    // ENG: Band-limited DSP engine (PolyBLEP).
     OscillatorPolyBLEP polyblep;
 };
-
-/*
-#pragma once
-#include <cmath>
-
-const float PI_OVER_4 = 0.7853981633974483f;
-const float PI = 3.1415926535897932f;
-const float TWO_PI = 6.2831853071795864f;
- 
-class Oscillator
-{
-    public:
-        float period = 0.0f;
-        float amplitude = 1.0f;
-   
-    void reset()
-    {
-        inc = 0.0f;
-        phase = 0.0f;
-        sin0 = 0.0f;
-        sin1 = 0.0f;
-        dsin = 0.0f;
-        dc = 0.0f;
-
-    }
- 
-    float nextSample()
-    {
-        float output = 0.0f;
-        phase += inc;
-        if (phase <= PI_OVER_4) {
-
-            float halfPeriod = period / 2.0f;
-            phaseMax = std::floor(0.5f + halfPeriod) - 0.5f;
-            dc = 0.5f * amplitude / phaseMax;
-            phaseMax *= PI;
-            inc = phaseMax / halfPeriod;
-            phase = -phase;
-            sin0 = amplitude * std::sin(phase);
-            sin1 = amplitude * std::sin(phase - inc);
-            dsin = 2.0f * std::cos(inc);
-            if (phase * phase > 1e-9) {
-                output = sin0 / phase;
-            }
-            else {
-                output = amplitude;
-            }
-        }
-        else {
-            if (phase > phaseMax) {
-                phase = phaseMax + phaseMax - phase;
-                inc = -inc;
-            }
-            float sinp = dsin * sin0 - sin1;
-            sin1 = sin0;
-            sin0 = sinp;
-            output = sinp / phase;
-
-        }
-        return output - dc;
-
-    }
-    private:
-        float phase;
-        float phaseMax;
-        float inc;
-        float sin0;
-        float sin1;
-        float dsin;
-        float dc;
-};
-*/

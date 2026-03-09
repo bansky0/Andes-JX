@@ -1,9 +1,37 @@
 /*
-  ==============================================================================
+==============================================================================
 
-    This file contains the basic framework code for a JUCE plugin processor.
+    PluginProcessor.h
 
-  ==============================================================================
+    ESP:
+    Define la clase principal del plugin JUCE que conecta el host (DAW)
+    con el motor interno del sintetizador.
+
+    Este archivo declara:
+    - La clase AudioProcessor del plugin
+    - El sistema de parámetros mediante AudioProcessorValueTreeState
+    - La interfaz hacia el motor Synth
+    - Métodos del ciclo de vida del plugin (prepareToPlay, processBlock, etc.)
+
+    En términos simples:
+    Este archivo define la estructura del "cerebro" del plugin que el host
+    utilizará para comunicarse con el sintetizador.
+
+    ENG:
+    Defines the main JUCE plugin processor class that connects the host
+    (DAW) with the internal synthesizer engine.
+
+    This file declares:
+    - The AudioProcessor class
+    - Parameter management via AudioProcessorValueTreeState
+    - The interface to the Synth engine
+    - Plugin lifecycle methods (prepareToPlay, processBlock, etc.)
+
+    In simple terms:
+    This file defines the structure of the plugin "brain" used by the host
+    to communicate with the synthesizer.
+
+==============================================================================
 */
 
 #pragma once
@@ -55,8 +83,27 @@ namespace ParameterID
 }
 
 //==============================================================================
-/**
-*/
+// ESP:
+// Clase principal del procesador del plugin.
+// Gestiona:
+//
+// - Comunicación con el host (DAW)
+// - Parámetros del plugin
+// - Procesamiento de audio
+// - Procesamiento MIDI
+// - Conexión con el motor Synth
+//
+// ENG:
+// Main plugin processor class.
+// Responsible for:
+//
+// - Communication with the host (DAW)
+// - Plugin parameters
+// - Audio processing
+// - MIDI processing
+// - Connection with the Synth engine
+//==============================================================================
+
 class AndesJXAudioProcessor  : public juce::AudioProcessor,
                             private juce::ValueTree::Listener
 {

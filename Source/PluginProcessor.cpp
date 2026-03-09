@@ -1,9 +1,33 @@
 /*
-  ==============================================================================
+==============================================================================
 
-    This file contains the basic framework code for a JUCE plugin processor.
+    PluginProcessor.cpp
 
-  ==============================================================================
+    ESP:
+    Implementación del procesador principal del plugin.
+
+    Aquí se conecta el motor Synth con el flujo de audio del host.
+    Este archivo contiene la lógica que:
+
+    - Inicializa el sintetizador
+    - Recibe buffers de audio del DAW
+    - Procesa eventos MIDI
+    - Genera la señal de audio del sintetizador
+    - Aplica protección y control del flujo de audio
+
+    ENG:
+    Implementation of the main plugin processor.
+
+    This file connects the Synth engine with the host audio stream.
+    It contains the logic responsible for:
+
+    - Initializing the synthesizer
+    - Receiving audio buffers from the DAW
+    - Processing MIDI events
+    - Rendering the synthesizer audio signal
+    - Maintaining audio stream stability
+
+==============================================================================
 */
 
 #include "PluginProcessor.h"
@@ -170,7 +194,24 @@ void AndesJXAudioProcessor::changeProgramName (int /*index*/, const juce::String
     // not implemented
 }
 
-//==============================================================================
+
+//------------------------------------------------------------------------------
+// ESP:
+// Inicialización del plugin cuando el host comienza reproducción.
+// Aquí se configuran:
+//
+// - sampleRate
+// - buffers internos
+// - inicialización del motor Synth
+//
+// ENG:
+// Called when the host starts playback.
+// Used to configure:
+//
+// - sampleRate
+// - internal buffers
+// - Synth engine initialization
+//------------------------------------------------------------------------------
 void AndesJXAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     juce::dsp::ProcessSpec spec;
@@ -191,9 +232,18 @@ void AndesJXAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBloc
     reset();
 }
 
+
+//------------------------------------------------------------------------------
+// ESP:
+// Llamado cuando el host libera los recursos del plugin.
+// Puede utilizarse para liberar memoria o resetear estados.
+//
+// ENG:
+// Called when the host releases plugin resources.
+// Can be used to free memory or reset internal states.
+//------------------------------------------------------------------------------
 void AndesJXAudioProcessor::releaseResources()
 {
-    //synth.deallocateResources();
 }
 
 void AndesJXAudioProcessor::reset()
@@ -227,6 +277,27 @@ bool AndesJXAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) 
 }
 #endif
 
+//------------------------------------------------------------------------------
+// ESP:
+// Función central de procesamiento de audio del plugin.
+//
+// Flujo típico:
+// 1. Recibir buffer de audio del host
+// 2. Procesar eventos MIDI
+// 3. Actualizar parámetros
+// 4. Llamar al motor Synth para generar audio
+// 5. Escribir el resultado en el buffer de salida
+//
+// ENG:
+// Core audio processing function of the plugin.
+//
+// Typical flow:
+// 1. Receive audio buffer from the host
+// 2. Process MIDI events
+// 3. Update parameters
+// 4. Call the Synth engine to generate audio
+// 5. Write the result to the output buffer
+//------------------------------------------------------------------------------
 void AndesJXAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
@@ -342,7 +413,7 @@ void AndesJXAudioProcessor::update()
     const int w1 = osc1WaveParam->getIndex();
     const int w2 = osc2WaveParam->getIndex();
 
-    // Mapeo seguro (por si cambias enum/orden)
+    // Mapeo seguro (por si se cambia enum/orden)
     auto toWave = [](int idx) -> WaveType
         {
             switch (idx)
@@ -361,28 +432,17 @@ void AndesJXAudioProcessor::update()
 
     float sampleRate = float(getSampleRate())* 2.0f;
     float inverseSampleRate = 1.0f / sampleRate;
-    //float decayTime = envDecayParam->get() / 100.0f * 5.0f;
-    //float decaySamples = sampleRate * decayTime;
 
     synth.envAttack = std::exp(-inverseSampleRate * std::exp(5.5f - 0.075f * envAttackParam->get()));
     synth.envDecay =  std::exp(-inverseSampleRate * std::exp(5.5f - 0.075f * envDecayParam->get()));
     synth.envSustain = envSustainParam->get() / 100.0f;
     synth.numVoices = (polyModeParam->getIndex() == 0) ? 1 : MAX_VOICES;
-    //synth.envDecay =  std::exp(std::log(SILENCE) / decaySamples);
 
     float envRelease = envReleaseParam->get();
     float r = juce::jmax(1.0f, envRelease); 
     synth.envRelease = std::exp(-inverseSampleRate * std::exp(5.5f - 0.075f * r));
 
-    /*
-    if (envRelease < 1.0f) {
-        synth.envRelease = 0.75f;
-    }
-    else {
-        synth.envRelease = std::exp(-inverseSampleRate * std::exp(5.5f - 0.075f * envRelease));
-    }
-    */
-
+    
     synth.oscMix = oscMixParam->get() / 100.0f;
 
     float noiseMix = noiseParam->get() / 100.0f;
@@ -404,14 +464,14 @@ void AndesJXAudioProcessor::update()
 
     float gain = juce::Decibels::decibelsToGain(outputLevelParam->get());
     synth.outputLevelSmoother.setTargetValue(gain);
-    //synth.outputLevel = juce::Decibels::decibelsToGain(outputLevelParam->get());
+
        
     float filterVelocity = filterVelocityParam->get();
     if (filterVelocity <-90.0f) {
         synth.velocitySensitivity = 0.0f;
         synth.ignoreVelocity = true;
     } else {
-        synth.velocitySensitivity = juce::jlimit(0.0f, 1.0f, std::abs(filterVelocity) / 100.0f);//0.0005f * filterVelocity;
+        synth.velocitySensitivity = juce::jlimit(0.0f, 1.0f, std::abs(filterVelocity) / 100.0f);
     synth.ignoreVelocity = false;
     }
     
@@ -424,9 +484,7 @@ void AndesJXAudioProcessor::update()
     synth.setLfoRateHz(lfoHz);
 
     
-    
     //GLIDE / PORTAMENTO
-
     const float inverseUpdateRate = 32.0f / sampleRate;
     synth.glideMode = glideModeParam->getIndex();
     float gr = glideRateParam->get();
@@ -444,10 +502,7 @@ void AndesJXAudioProcessor::update()
 
     // Calcular valores al cuadrado para vibrato en semitonos
     synth.lfoDepthSemis = vibratoValue * vibratoValue * 0.0002f; // vibrato
-    //synth.pwmDepth = 0.0f;
-    //synth.pwmDepth = std::abs(vibratoValue) * 0.01f;
-    //synth.pwmDepth = vibratoValue * vibratoValue * 0.01f;      // PWM
-    // Si el parámetro es negativo, usar PWM en lugar de vibrato
+ 
     if (vibratoValue < 0.0f) {
         synth.lfoDepthSemis = 0.0f;  // Apagar vibrato
         synth.pwmDepth = std::abs(vibratoValue) * 0.01f;
@@ -456,26 +511,20 @@ void AndesJXAudioProcessor::update()
     {
         synth.pwmDepth = 0;
     }
-    //synth.lfoDepthSemis = 0.02f * lfoDepthParam->get(); // 0..2 semitonos
-    //synth.lfoDepthSemis = 2.0f; // medio semitono, solo para test
 
     // FILTRO - Convertir de % a valores reales
-    //float filterFreqPercent = filterFreqParam->get();  // 0-100%
     float filterResoPercent = filterResoParam->get();  // 0-100%
 
     float filterLFO = filterLFOParam->get() / 100.0f;          // 0..1
     synth.filterLFODepthSemis = 2.5f * filterLFO * filterLFO;        // 0..2.5 (curva parabólica)
 
     // Mapeo exponencial para frecuencia (más control en graves)
-    //synth.filterCutoff = 80.0f * std::exp(6.0f * filterFreqPercent / 100.0f);  // 80Hz - 32kHz
-    //synth.filterCutoff = juce::jlimit(80.0f, 20000.0f, synth.filterCutoff);
     const float x = juce::jlimit(0.0f, 1.0f, filterFreqParam->get() / 100.0f);
     const float minHz = 80.0f;
     const float maxHz = 20000.0f;
     synth.filterCutoff = minHz * std::exp(std::log(maxHz / minHz) * x);
 
     // Mapeo lineal para resonancia
-    //synth.filterResonance = 0.5f + 4.5f * (filterResoPercent / 100.0f);  // 0.5 -
     float x1 = juce::jlimit(0.0f, 1.0f, filterResoPercent / 100.0f);
     synth.filterResonance = x1 * x1;
 
@@ -489,11 +538,7 @@ void AndesJXAudioProcessor::update()
     synth.filterEnvAttack = std::exp(-inverseSampleRate * std::exp(5.5f - 0.075f * filterAttackParam->get()));
     synth.filterEnvDecay = std::exp(-inverseSampleRate * std::exp(5.5f - 0.075f * filterDecayParam->get()));
     synth.filterEnvSustain = filterSustainParam->get() / 100.0f;
-    /*
-    float fr = filterReleaseParam->get();
-    if (fr < 1.0f) synth.filterEnvRelease = 0.75f;
-    else          synth.filterEnvRelease = std::exp(-inverseSampleRate * std::exp(5.5f - 0.075f * fr));
-    */
+
     // Actualizar tipo de filtro
     const int filterTypeIndex = filterTypeParam->getIndex();
     synth.setFilterType(static_cast<Synth::FilterType>(filterTypeIndex));
@@ -721,7 +766,12 @@ void AndesJXAudioProcessor::createPrograms()
                                             0.00f, 25.00f, 0.00f, 55.00f, 25.00f, 
                                             30.00f, 0.81f, 4.00f, 0.00f, -2.00f, 
                                             0.00f, 0.00f, 0.00f);
-    presets.emplace_back("Wobble Bass [SA]", 100.00f, -12.00f, -8.80f, 0.00f, 82.00f, 0.21f, 72.00f, 47.00f, -32.00f, 34.00f, 64.00f, 100.00f, 60.00f, 20.00f, 69.00f, 100.00f, 15.00f, 9.00f, 50.00f, 100.00f, 7.00f, 0.81f, -8.00f, 0.00f, -1.00f, 0.00f, 0.00f, 0.00f);
+    presets.emplace_back("Wobble Bass [SA]", 100.00f, -12.00f, -8.80f, 0.00f, 82.00f,
+                                            0.21f, 72.00f, 47.00f, -32.00f, 34.00f, 
+                                            64.00f, 100.00f, 60.00f, 20.00f, 69.00f, 
+                                            100.00f, 15.00f, 9.00f, 50.00f, 100.00f, 
+                                            7.00f, 0.81f, -8.00f, 0.00f, -1.00f, 
+                                            0.00f, 0.00f, 0.00f);
     presets.emplace_back("Squelch Bass", 100.00f, -12.00f, -8.80f, 0.00f, 35.00f, 0.00f, 67.00f, 70.00f, -48.00f, 0.00f, 0.00f, 100.00f, 60.00f, 48.00f, 69.00f, 100.00f, 15.00f, 0.00f, 50.00f, 100.00f, 7.00f, 0.81f, -8.00f, 0.00f, -1.00f, 0.00f, 0.00f, 0.00f);
     presets.emplace_back("Rubber Bass [ZF]", 49.00f, -12.00f, 1.60f, 1.00f, 35.00f, 0.00f, 36.00f, 15.00f, 50.00f, 20.00f, 0.00f, 100.00f, 60.00f, 0.00f, 38.00f, 0.00f, 25.00f, 0.00f, 60.00f, 100.00f, 22.00f, 0.19f, 0.00f, 0.00f, -2.00f, 0.00f, 0.00f, 0.00f);
     presets.emplace_back("Soft Pick Bass", 37.00f, 0.00f, 7.80f, 0.00f, 22.00f, 0.00f, 33.00f, 47.00f, 42.00f, 16.00f, 18.00f, 100.00f, 60.00f, 0.00f, 0.00f, 0.00f, 25.00f, 4.00f, 58.00f, 0.00f, 22.00f, 0.15f, -12.00f, 33.00f, -2.00f, 0.00f, 0.00f, 0.00f);
