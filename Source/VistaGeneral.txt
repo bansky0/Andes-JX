@@ -1,0 +1,40 @@
+┌──────────────────────────────┐
+│      DAW / Host (JUCE)       │
+│  MIDI + Audio Callback       │
+└──────────────┬───────────────┘
+               │
+               ▼
+┌──────────────────────────────┐
+│       PluginProcessor        │
+│------------------------------│
+│ - Recibe MIDI del host       │
+│ - Recibe/entrega buffers     │
+│ - Lee parámetros del plugin  │
+│ - Llama a Synth::render()    │
+└──────────────┬───────────────┘
+               │
+               ▼
+┌──────────────────────────────┐
+│            Synth             │
+│------------------------------│
+│ Estado global del instrumento│
+│ - Polifonía / mono / legato  │
+│ - LFO global                 │
+│ - Glide / pitch bend         │
+│ - CC / aftertouch            │
+│ - Filtro global base         │
+│ - Noise global               │
+│ - Asignación de voces        │
+└───────┬───────────┬──────────┘
+        │           │
+        │           └──────────────┐
+        ▼                          ▼
+┌───────────────┐         ┌─────────────────┐
+│ NoiseGenerator│         │   Parámetros    │
+│---------------│         │ (APVTS / host)  │
+│ - White noise │         │-----------------│
+│ - nextValue() │         │ - ADSR          │
+└───────────────┘         │ - filtro        │
+                          │ - LFO           │
+                          │ - waves         │
+                          └─────────────────┘

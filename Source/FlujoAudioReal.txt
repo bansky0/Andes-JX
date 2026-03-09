@@ -1,0 +1,39 @@
+MIDI note on/off / CC / pitch bend
+                │
+                ▼
+         PluginProcessor
+                │
+                ▼
+              Synth
+                │
+     ┌──────────┴──────────┐
+     │ actualiza estado     │
+     │ global y voces       │
+     └──────────┬──────────┘
+                ▼
+        loop de samples del bloque
+                │
+                ▼
+      para cada voz activa:
+         osc1 + osc2 + noise
+                │
+                ▼
+              filter
+                │
+                ▼
+        amp env * velocity
+                │
+                ▼
+               pan
+                │
+                ▼
+       suma en output L / output R
+                │
+                ▼
+   smoothing / expression / saturation
+                │
+                ▼
+       protectYourEars(buffer)
+                │
+                ▼
+          salida al host / DAW

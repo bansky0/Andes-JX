@@ -1,0 +1,19 @@
+PluginProcessor.h / .cpp
+        │
+        ▼
+    Synth.h / .cpp
+        │
+        ├── Voice.h
+        │     ├── Oscillator.h
+        │     │      └── OscillatorPolyBLEP.h / .cpp
+        │     ├── Envelope.h
+        │     ├── IFilter.h
+        │     ├── SVFFilter.h
+        │     │      └── SVF.h
+        │     ├── MoogFilter.h
+        │     │      └── LadderFilter.h
+        │     └── (paneo / glide / estado)
+        │
+        ├── NoiseGenerator.h
+        ├── Constants.h
+        └── Utils.h
