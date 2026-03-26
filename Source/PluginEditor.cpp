@@ -13,9 +13,33 @@
 AndesJXAudioProcessorEditor::AndesJXAudioProcessorEditor (AndesJXAudioProcessor& p)
     : AudioProcessorEditor (&p), audioProcessor (p)
     {
-        // Make sure that before the constructor has finished, you've set the
-        // editor's size to whatever you need it to be.
-        setSize (400, 300);
+        backgroundAndesJX = juce::ImageCache::getFromMemory(BinaryData::backgroundAndesJX_png, BinaryData::backgroundAndesJX_pngSize);
+    
+        if (backgroundAndesJX.isValid())
+        {
+            backgroundAndesJX = backgroundAndesJX.rescaled(
+                backgroundAndesJX.getWidth() / 4,
+                backgroundAndesJX.getHeight() / 4,
+                juce::Graphics::highResamplingQuality
+            );
+
+            setSize(backgroundAndesJX.getWidth(), backgroundAndesJX.getHeight());
+        }
+        else
+        {
+            setSize(500, 430);
+        }
+
+        oscWaveSelector.addItem("Sine", 1);
+        oscWaveSelector.addItem("Saw", 2);
+        oscWaveSelector.addItem("Square", 3);
+        oscWaveSelector.addItem("Triangle", 4);
+        oscWaveSelector.addItem("PWM", 5);
+
+        addAndMakeVisible(oscWaveSelector);
+
+        oscWaveAttachment = std::make_unique<ComboBoxAttachment>(audioProcessor.apvts, "osc1Wave", oscWaveSelector);
+
     }
 
 AndesJXAudioProcessorEditor::~AndesJXAudioProcessorEditor()
@@ -25,17 +49,21 @@ AndesJXAudioProcessorEditor::~AndesJXAudioProcessorEditor()
 //==============================================================================
 void AndesJXAudioProcessorEditor::paint (juce::Graphics& g)
 {
-    // (Our component is opaque, so we must completely fill the background with a solid colour)
     g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
-
-    g.setColour (juce::Colours::white);
-    g.setFont (juce::FontOptions (15.0f));
-    g.drawFittedText ("CH  6-Oscilador!", getLocalBounds(), juce::Justification::centred, 1);
+    if (backgroundAndesJX.isValid())
+    {
+        g.drawImageWithin(
+            backgroundAndesJX,
+            0, 0,
+            getWidth(), getHeight(),
+            juce::RectanglePlacement::stretchToFit
+        );
+    }
 }
 
 void AndesJXAudioProcessorEditor::resized()
 {
-    // This is generally where you'll want to lay out the positions of any
-    // subcomponents in your editor..
+    oscWaveSelector.setBounds(60, 80, 120, 24);
+
 }
 

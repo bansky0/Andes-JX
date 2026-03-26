@@ -566,9 +566,12 @@ bool AndesJXAudioProcessor::hasEditor() const
 
 juce::AudioProcessorEditor* AndesJXAudioProcessor::createEditor()
 {
+    /*
     auto editor = new juce::GenericAudioProcessorEditor(*this);
     editor->setSize(500, 1050);
     return editor;
+    */
+    return new AndesJXAudioProcessorEditor(*this);
 }
 
 //==============================================================================

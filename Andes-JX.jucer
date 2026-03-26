@@ -7,6 +7,10 @@
               pluginCharacteristicsValue="pluginIsSynth,pluginWantsMidiIn"
               pluginCode="NRAN">
   <MAINGROUP id="YlH79P" name="AndesJX">
+    <GROUP id="{CB42C506-BBE1-44CD-68AF-A6080BADE870}" name="Assets">
+      <FILE id="O2YSb8" name="backgroundAndesJX.png" compile="0" resource="1"
+            file="Assets/backgroundAndesJX.png"/>
+    </GROUP>
     <GROUP id="{4D135059-234F-12E2-FE03-2E96DC8381EB}" name="Source">
       <FILE id="TD8Rts" name="Constants.h" compile="0" resource="0" file="Source/Constants.h"/>
       <FILE id="rVTpjs" name="Envelope.h" compile="0" resource="0" file="Source/Envelope.h"/>
