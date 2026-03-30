@@ -7,6 +7,10 @@
               pluginCharacteristicsValue="pluginIsSynth,pluginWantsMidiIn"
               pluginCode="NRAN">
   <MAINGROUP id="YlH79P" name="AndesJX">
+    <GROUP id="{149E7E08-7849-D2D4-B605-867CE5708629}" name="LookAndFeel">
+      <FILE id="iQ839j" name="ComboBoxLookAndFeel.h" compile="0" resource="0"
+            file="Source/LookAndFeel/ComboBoxLookAndFeel.h"/>
+    </GROUP>
     <GROUP id="{CB42C506-BBE1-44CD-68AF-A6080BADE870}" name="Assets">
       <FILE id="O2YSb8" name="backgroundAndesJX.png" compile="0" resource="1"
             file="Assets/backgroundAndesJX.png"/>
