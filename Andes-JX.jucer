@@ -10,6 +10,10 @@
     <GROUP id="{149E7E08-7849-D2D4-B605-867CE5708629}" name="LookAndFeel">
       <FILE id="iQ839j" name="ComboBoxLookAndFeel.h" compile="0" resource="0"
             file="Source/LookAndFeel/ComboBoxLookAndFeel.h"/>
+      <FILE id="g5leQe" name="ToggleLookAndFeel.cpp" compile="1" resource="0"
+            file="Source/LookAndFeel/ToggleLookAndFeel.cpp"/>
+      <FILE id="uop9C8" name="ToggleLookAndFeel.h" compile="0" resource="0"
+            file="Source/LookAndFeel/ToggleLookAndFeel.h"/>
     </GROUP>
     <GROUP id="{CB42C506-BBE1-44CD-68AF-A6080BADE870}" name="Assets">
       <FILE id="O2YSb8" name="backgroundAndesJX.png" compile="0" resource="1"

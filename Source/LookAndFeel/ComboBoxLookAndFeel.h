@@ -71,8 +71,10 @@ public:
     {
         juce::Rectangle<int> area(0, 0, width, height);
 
-        const juce::Colour bg = box.findColour(juce::ComboBox::backgroundColourId, true).isTransparent()
-                                ? comboBg : box.findColour(juce::ComboBox::backgroundColourId);
+       // const juce::Colour bg = box.findColour(juce::ComboBox::backgroundColourId, true).isTransparent()
+       //                         ? comboBg : box.findColour(juce::ComboBox::backgroundColourId);
+        const auto boxBg = box.findColour(juce::ComboBox::backgroundColourId, true);
+        const auto bg = boxBg.isTransparent() ? comboBg : boxBg;
         g.setColour(bg);
         g.fillRect(area);
 
@@ -110,7 +112,7 @@ public:
 
     juce::Font getComboBoxFont(juce::ComboBox& /*box*/) override
     {
-        return juce::Font(comboBoxFontHeight);
+        return juce::Font(juce::FontOptions(comboBoxFontHeight));
     }
 
 private:

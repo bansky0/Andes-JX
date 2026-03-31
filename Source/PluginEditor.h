@@ -11,10 +11,13 @@
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
 #include "LookAndFeel/ComboBoxLookAndFeel.h"
+#include "LookAndFeel/ToggleLookAndFeel.h"
+
 //==============================================================================
 /**
 */
-class AndesJXAudioProcessorEditor  : public juce::AudioProcessorEditor
+class AndesJXAudioProcessorEditor  : public juce::AudioProcessorEditor,
+                                     private juce::AudioProcessorValueTreeState::Listener
 {
 public:
     AndesJXAudioProcessorEditor (AndesJXAudioProcessor&);
@@ -33,6 +36,7 @@ private:
     juce::ComboBox oscWaveSelector;
     juce::ComboBox osc2WaveSelector;
     juce::ComboBox filterKeycenterSelector; // new Filter Keycenter combo
+    juce::ComboBox presetSelector;
 
     using ComboBoxAttachment = juce::AudioProcessorValueTreeState::ComboBoxAttachment;
     std::unique_ptr<ComboBoxAttachment> oscWaveAttachment;
@@ -40,6 +44,13 @@ private:
     std::unique_ptr<ComboBoxAttachment> filterKeycenterAttachment; // attachment for new combo
 
     std::unique_ptr<ComboBoxLookAndFeel> comboBoxLookAndFeel;
+
+    // Poly toggle + lookandfeel
+    juce::ToggleButton polyToggle;
+    std::unique_ptr<ToggleLookAndFeel> toggleLookAndFeel;
+
+    // AudioProcessorValueTreeState listener
+    void parameterChanged(const juce::String& parameterID, float newValue) override;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AndesJXAudioProcessorEditor)
 };
