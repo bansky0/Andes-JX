@@ -64,30 +64,34 @@ public:
         g.drawFittedText(text, area.reduced(10, 0), juce::Justification::centredLeft, 1);
     }
 
-    // Draw only background/outline. Do not draw the text.
     void drawComboBox(juce::Graphics& g, int width, int height, bool isButtonDown,
-                      int /*buttonX*/, int /*buttonY*/, int /*buttonW*/, int /*buttonH*/,
-                      juce::ComboBox& box) override
+        int /*buttonX*/, int /*buttonY*/, int /*buttonW*/, int /*buttonH*/,
+        juce::ComboBox& box) override
     {
-        juce::Rectangle<int> area(0, 0, width, height);
+        auto bounds = juce::Rectangle<float>(0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height)).reduced(0.5f);
 
-       // const juce::Colour bg = box.findColour(juce::ComboBox::backgroundColourId, true).isTransparent()
-       //                         ? comboBg : box.findColour(juce::ComboBox::backgroundColourId);
         const auto boxBg = box.findColour(juce::ComboBox::backgroundColourId, true);
-        const auto bg = boxBg.isTransparent() ? comboBg : boxBg;
-        g.setColour(bg);
-        g.fillRect(area);
+        auto bg = boxBg.isTransparent() ? comboBg : boxBg;
 
-        g.setColour(bg.darker(0.35f));
-        g.drawRect(area);
+        const auto outline = bg.darker(0.35f);
 
         if (isButtonDown)
-        {
-            g.setColour(bg.darker(0.08f));
-            g.fillRect(area.reduced(1));
-        }
+            bg = bg.darker(0.08f);
 
-        // Do NOT draw text here; the ComboBox Label will paint it (configured in positionComboBoxText).
+        // fondo exterior
+        g.setColour(bg);
+        g.fillRoundedRectangle(bounds, 2.0f);
+
+        // borde
+        g.setColour(outline);
+        g.drawRoundedRectangle(bounds, 2.0f, 1.0f);
+
+        // panel interno sutil para profundidad
+        auto inner = bounds.reduced(1.5f);
+        auto topSection = inner.removeFromTop(bounds.getHeight() * 0.45f);
+
+        g.setColour(bg.brighter(0.03f));
+        g.fillRoundedRectangle(topSection, 2.0f);
     }
 
     // Configure internal Label: font, colours, padding.

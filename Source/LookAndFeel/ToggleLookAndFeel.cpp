@@ -1,3 +1,14 @@
+/*
+  ==============================================================================
+
+    SegmentedButtonLookAndFeel.h
+    Created: 31 March 2026
+    Author:  Jhonatan
+
+  ==============================================================================
+*/
+
+
 #include "ToggleLookAndFeel.h"
 
 void ToggleLookAndFeel::drawToggleButton(juce::Graphics& g,
@@ -32,11 +43,11 @@ void ToggleLookAndFeel::drawToggleButton(juce::Graphics& g,
 
     // fondo exterior
     g.setColour(fill);
-    g.fillRoundedRectangle(bounds, 4.0f);
+    g.fillRoundedRectangle(bounds, 2.0f);
 
     // borde
     g.setColour(outlineColour);
-    g.drawRoundedRectangle(bounds, 4.0f, 1.0f);
+    g.drawRoundedRectangle(bounds, 2.0f, 1.0f);
 
     // panel interno sutil para dar profundidad
     auto inner = bounds.reduced(1.5f);

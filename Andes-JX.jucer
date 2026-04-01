@@ -8,18 +8,26 @@
               pluginCode="NRAN">
   <MAINGROUP id="YlH79P" name="AndesJX">
     <GROUP id="{149E7E08-7849-D2D4-B605-867CE5708629}" name="LookAndFeel">
+      <FILE id="CeT7qD" name="KnobPrincipalLookAndFeel.h" compile="0" resource="0"
+            file="Source/LookAndFeel/KnobPrincipalLookAndFeel.h"/>
       <FILE id="iQ839j" name="ComboBoxLookAndFeel.h" compile="0" resource="0"
             file="Source/LookAndFeel/ComboBoxLookAndFeel.h"/>
       <FILE id="g5leQe" name="ToggleLookAndFeel.cpp" compile="1" resource="0"
             file="Source/LookAndFeel/ToggleLookAndFeel.cpp"/>
       <FILE id="uop9C8" name="ToggleLookAndFeel.h" compile="0" resource="0"
             file="Source/LookAndFeel/ToggleLookAndFeel.h"/>
+      <FILE id="ZKO1BH" name="SegmentedButtonLookAndFeel.h" compile="0" resource="0"
+            file="Source/LookAndFeel/SegmentedButtonLookAndFeel.h"/>
     </GROUP>
     <GROUP id="{CB42C506-BBE1-44CD-68AF-A6080BADE870}" name="Assets">
+      <FILE id="xuVtxb" name="AndesKnobPrincipal2.png" compile="0" resource="1"
+            file="Assets/AndesKnobPrincipal2.png"/>
       <FILE id="O2YSb8" name="backgroundAndesJX.png" compile="0" resource="1"
             file="Assets/backgroundAndesJX.png"/>
     </GROUP>
     <GROUP id="{4D135059-234F-12E2-FE03-2E96DC8381EB}" name="Source">
+      <FILE id="fKRuxZ" name="SegmentedControl.h" compile="0" resource="0"
+            file="Source/SegmentedControl.h"/>
       <FILE id="TD8Rts" name="Constants.h" compile="0" resource="0" file="Source/Constants.h"/>
       <FILE id="rVTpjs" name="Envelope.h" compile="0" resource="0" file="Source/Envelope.h"/>
       <FILE id="l9cfg5" name="OscillatorPolyBLEP.cpp" compile="1" resource="0"

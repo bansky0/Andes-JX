@@ -30,11 +30,13 @@ AndesJXAudioProcessorEditor::AndesJXAudioProcessorEditor (AndesJXAudioProcessor&
         setSize(500, 430);
     }
 
-    // Create single shared LookAndFeel instance and set defaults
+    //==========================================================================
+        // Shared ComboBox LookAndFeel
     comboBoxLookAndFeel = std::make_unique<ComboBoxLookAndFeel>();
-    comboBoxLookAndFeel->setDefaultComboBackground(juce::Colour::fromRGB(0x4F, 0x6B, 0x72)); // #4F6B72
-    comboBoxLookAndFeel->setDefaultComboText(juce::Colour::fromRGB(0xD9, 0xD9, 0xD9));       // #D9D9D9
+    comboBoxLookAndFeel->setDefaultComboBackground(juce::Colour::fromRGB(0x4F, 0x6B, 0x72));
+    comboBoxLookAndFeel->setDefaultComboText(juce::Colour::fromRGB(0xD9, 0xD9, 0xD9));
 
+    //==========================================================================
     // OSC1 Combo
     oscWaveSelector.setLookAndFeel(comboBoxLookAndFeel.get());
     oscWaveSelector.addItem("Sine", 1);
@@ -42,8 +44,8 @@ AndesJXAudioProcessorEditor::AndesJXAudioProcessorEditor (AndesJXAudioProcessor&
     oscWaveSelector.addItem("Square", 3);
     oscWaveSelector.addItem("Triangle", 4);
     oscWaveSelector.addItem("PWM", 5);
-    oscWaveSelector.setColour(juce::ComboBox::backgroundColourId, juce::Colour::fromRGB(0x4F,0x6B,0x72));
-    oscWaveSelector.setColour(juce::ComboBox::textColourId,       juce::Colour::fromRGB(0xD9,0xD9,0xD9));
+    oscWaveSelector.setColour(juce::ComboBox::backgroundColourId, juce::Colour::fromRGB(0x4F, 0x6B, 0x72));
+    oscWaveSelector.setColour(juce::ComboBox::textColourId, juce::Colour::fromRGB(0xD9, 0xD9, 0xD9));
     addAndMakeVisible(oscWaveSelector);
 
     // OSC2 Combo
@@ -53,78 +55,108 @@ AndesJXAudioProcessorEditor::AndesJXAudioProcessorEditor (AndesJXAudioProcessor&
     osc2WaveSelector.addItem("Square", 3);
     osc2WaveSelector.addItem("Triangle", 4);
     osc2WaveSelector.addItem("PWM", 5);
-    osc2WaveSelector.setColour(juce::ComboBox::backgroundColourId, juce::Colour::fromRGB(0x4F,0x6B,0x72));
-    osc2WaveSelector.setColour(juce::ComboBox::textColourId,       juce::Colour::fromRGB(0xD9,0xD9,0xD9));
+    osc2WaveSelector.setColour(juce::ComboBox::backgroundColourId, juce::Colour::fromRGB(0x4F, 0x6B, 0x72));
+    osc2WaveSelector.setColour(juce::ComboBox::textColourId, juce::Colour::fromRGB(0xD9, 0xD9, 0xD9));
     addAndMakeVisible(osc2WaveSelector);
 
-    // Filter Keycenter Combo (reuses the same LAF)
+    //==========================================================================
+	// Sliders LookAndFeel
+    knobPrincipalLookAndFeel = std::make_unique<KnobPrincipalLookAndFeel>();
+
+    auto configureKnob = [this](juce::Slider& s)
+        {
+            s.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+            s.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
+            s.setLookAndFeel(knobPrincipalLookAndFeel.get());
+            addAndMakeVisible(s);
+        };
+
+    configureKnob(mixSlider);
+    configureKnob(resonanceSlider);
+    configureKnob(cutoffSlider);
+    configureKnob(outputSlider);
+
+    outputSlider.setRange(-24.0, 6.0, 0.5);
+    outputSlider.setValue(0.0);
+
+    outputSlider.textFromValueFunction = [](double value)
+        {
+            if (std::abs(value) < 0.05)
+                return juce::String("0 dB");
+
+            if (value > 0.0)
+                return "+" + juce::String(value, 1) + " dB";
+
+            return juce::String(value, 1) + " dB";
+        };
+
+    //==========================================================================
+    // Filter Keycenter Combo
     filterKeycenterSelector.setLookAndFeel(comboBoxLookAndFeel.get());
 
-    // populate C1..C7 (MIDI notes: 24,36,48,60,72,84,96)
     const int noteIds[] = { 24, 36, 48, 60, 72, 84, 96 };
     const char* noteNames[] = { "C1", "C2", "C3", "C4", "C5", "C6", "C7" };
 
     for (int i = 0; i < 7; ++i)
         filterKeycenterSelector.addItem(noteNames[i], noteIds[i]);
 
-    // Colours and look
-    filterKeycenterSelector.setColour(juce::ComboBox::backgroundColourId, juce::Colour::fromRGB(0x4F,0x6B,0x72));
-    filterKeycenterSelector.setColour(juce::ComboBox::textColourId,       juce::Colour::fromRGB(0xD9,0xD9,0xD9));
+    filterKeycenterSelector.setColour(juce::ComboBox::backgroundColourId, juce::Colour::fromRGB(0x4F, 0x6B, 0x72));
+    filterKeycenterSelector.setColour(juce::ComboBox::textColourId, juce::Colour::fromRGB(0xD9, 0xD9, 0xD9));
 
     addAndMakeVisible(filterKeycenterSelector);
 
-    // Initialize selection from APVTS raw value (if present)
-    if (auto* raw = audioProcessor.apvts.getRawParameterValue ("filterKeycenter"))
+    if (auto* raw = audioProcessor.apvts.getRawParameterValue("filterKeycenter"))
     {
-        const int currentNote = juce::jlimit(0, 127, (int) std::round(*raw));
-        // setSelectedId expects the item id we added (the MIDI note)
-        filterKeycenterSelector.setSelectedId (currentNote, juce::dontSendNotification);
+        const int currentNote = juce::jlimit(0, 127, static_cast<int>(std::round(*raw)));
+        filterKeycenterSelector.setSelectedId(currentNote, juce::dontSendNotification);
     }
 
-    // When user changes the combo, update the parameter
     filterKeycenterSelector.onChange = [this]()
-    {
-        const int selectedId = filterKeycenterSelector.getSelectedId();
-        if (selectedId <= 0)
-            return;
-
-        if (auto* param = audioProcessor.apvts.getParameter("filterKeycenter"))
         {
-            param->setValueNotifyingHost(param->convertTo0to1((float) selectedId));
-        }
-    };
+            const int selectedId = filterKeycenterSelector.getSelectedId();
+            if (selectedId <= 0)
+                return;
 
-    // Attachments (ensure the parameter IDs exist in your APVTS)
-    oscWaveAttachment = std::make_unique<ComboBoxAttachment>(audioProcessor.apvts, "osc1Wave", oscWaveSelector);
-    osc2WaveAttachment = std::make_unique<ComboBoxAttachment>(audioProcessor.apvts, "osc2Wave", osc2WaveSelector);
-    // Replace "filterKeycenter" with your actual parameter ID for the filter keycenter
-    filterKeycenterAttachment = std::make_unique<ComboBoxAttachment>(audioProcessor.apvts, "filterKeycenter", filterKeycenterSelector);
+            if (auto* param = audioProcessor.apvts.getParameter("filterKeycenter"))
+                param->setValueNotifyingHost(param->convertTo0to1(static_cast<float>(selectedId)));
+        };
 
-    // --- Presets Combo (reutiliza el mismo LookAndFeel) ---
+    //==========================================================================
+    // Presets Combo
     presetSelector.setLookAndFeel(comboBoxLookAndFeel.get());
 
-    // populate from processor programs
     const int numPrograms = audioProcessor.getNumPrograms();
     for (int i = 0; i < numPrograms; ++i)
         presetSelector.addItem(audioProcessor.getProgramName(i), i + 1);
 
-    // colors / LAF
-    presetSelector.setColour(juce::ComboBox::backgroundColourId, juce::Colour::fromRGB(0x4F,0x6B,0x72));
-    presetSelector.setColour(juce::ComboBox::textColourId,       juce::Colour::fromRGB(0xD9,0xD9,0xD9));
+    presetSelector.setColour(juce::ComboBox::backgroundColourId, juce::Colour::fromRGB(0x4F, 0x6B, 0x72));
+    presetSelector.setColour(juce::ComboBox::textColourId, juce::Colour::fromRGB(0xD9, 0xD9, 0xD9));
 
     addAndMakeVisible(presetSelector);
 
-    // select current program
     presetSelector.setSelectedId(audioProcessor.getCurrentProgram() + 1, juce::dontSendNotification);
 
-    // when user changes preset, tell the processor to change program
     presetSelector.onChange = [this]()
-    {
-        const int id = presetSelector.getSelectedId();
-        if (id > 0)
-            audioProcessor.setCurrentProgram(id - 1);
-    };
+        {
+            const int id = presetSelector.getSelectedId();
+            if (id > 0)
+                audioProcessor.setCurrentProgram(id - 1);
+        };
 
+    //==========================================================================
+    // Glide Mode Combo
+    glideModeSelector.setLookAndFeel(comboBoxLookAndFeel.get());
+    glideModeSelector.addItem("OFF", 1);
+    glideModeSelector.addItem("LEGATO", 2);
+    glideModeSelector.addItem("ALWAYS", 3);
+
+    glideModeSelector.setColour(juce::ComboBox::backgroundColourId, juce::Colour::fromRGB(0x4F, 0x6B, 0x72));
+    glideModeSelector.setColour(juce::ComboBox::textColourId, juce::Colour::fromRGB(0xD9, 0xD9, 0xD9));
+
+    addAndMakeVisible(glideModeSelector);
+
+    //==========================================================================
+    // Toggle LookAndFeel for Mono/Poly
     toggleLookAndFeel = std::make_unique<ToggleLookAndFeel>();
 
     toggleLookAndFeel->setColour(ToggleLookAndFeel::backgroundOnColourId,
@@ -142,27 +174,56 @@ AndesJXAudioProcessorEditor::AndesJXAudioProcessorEditor (AndesJXAudioProcessor&
     polyToggle.setTooltip("Mono / Poly");
     addAndMakeVisible(polyToggle);
 
-    // Initialize toggle from parameter (safe guard if parameter exists)
     if (auto* param = dynamic_cast<juce::AudioParameterChoice*>(audioProcessor.apvts.getParameter("polyMode")))
     {
-        const bool isPoly = (param->getIndex() == 1); // layout uses { "Mono", "Poly" }
+        const bool isPoly = (param->getIndex() == 1);
         polyToggle.setToggleState(isPoly, juce::dontSendNotification);
         polyToggle.setButtonText(isPoly ? "Poly" : "Mono");
 
-        // Clicking updates parameter (notify host)
         polyToggle.onClick = [this, param]()
-        {
-            const int cur = param->getIndex();
-            const int next = (cur == 0) ? 1 : 0;
-            param->setValueNotifyingHost(param->convertTo0to1(next));
-            polyToggle.setButtonText(next == 1 ? "Poly" : "Mono");
-        };
+            {
+                const int cur = param->getIndex();
+                const int next = (cur == 0) ? 1 : 0;
+                param->setValueNotifyingHost(param->convertTo0to1(static_cast<float>(next)
+                    ));
+                polyToggle.setButtonText(next == 1 ? "Poly" : "Mono");
+            };
 
-        // Register for parameter change callbacks to reflect external changes
         audioProcessor.apvts.addParameterListener("polyMode", this);
     }
 
-    // NOTA: no uso Timer aquí; uso listener para actualizaciones en tiempo real.
+    //==========================================================================
+    // Filter Type Segmented Control
+    segmentedButtonLookAndFeel = std::make_unique<SegmentedButtonLookAndFeel>();
+    segmentedButtonLookAndFeel->setDefaultBackground(juce::Colour::fromRGB(0x4F, 0x6B, 0x72));
+    segmentedButtonLookAndFeel->setDefaultText(juce::Colour::fromRGB(0xD9, 0xD9, 0xD9));
+    segmentedButtonLookAndFeel->setFontHeight(11.0f);
+
+    filterTypeControl.setLookAndFeelForButtons(segmentedButtonLookAndFeel.get());
+    filterTypeControl.setItems({ "SVF", "MOOG" }, 1002);
+    addAndMakeVisible(filterTypeControl);
+
+    if (auto* param = dynamic_cast<juce::AudioParameterChoice*>(audioProcessor.apvts.getParameter("filterType")))
+    {
+        // Inicializar UI desde el parámetro
+        filterTypeControl.setSelectedIndex(param->getIndex(), juce::dontSendNotification);
+
+        // UI -> parámetro
+        filterTypeControl.onChange = [this, param](int index)
+            {
+                param->setValueNotifyingHost(param->convertTo0to1(static_cast<float>(index)));
+            };
+
+        // Parámetro -> UI
+        audioProcessor.apvts.addParameterListener("filterType", this);
+    }
+
+    //==========================================================================
+    // Attachments
+    oscWaveAttachment = std::make_unique<ComboBoxAttachment>(audioProcessor.apvts, "osc1Wave", oscWaveSelector);
+    osc2WaveAttachment = std::make_unique<ComboBoxAttachment>(audioProcessor.apvts, "osc2Wave", osc2WaveSelector);
+    filterKeycenterAttachment = std::make_unique<ComboBoxAttachment>(audioProcessor.apvts, "filterKeycenter", filterKeycenterSelector);
+    glideModeAttachment = std::make_unique<ComboBoxAttachment>(audioProcessor.apvts, "glideMode", glideModeSelector);
 }
 
 AndesJXAudioProcessorEditor::~AndesJXAudioProcessorEditor()
@@ -172,12 +233,22 @@ AndesJXAudioProcessorEditor::~AndesJXAudioProcessorEditor()
     osc2WaveSelector.setLookAndFeel(nullptr);
     filterKeycenterSelector.setLookAndFeel(nullptr);
     presetSelector.setLookAndFeel(nullptr);
+    glideModeSelector.setLookAndFeel(nullptr);
 
     comboBoxLookAndFeel.reset();
     // Remove parameter listener and restore lookAndFeel pointer
     audioProcessor.apvts.removeParameterListener("polyMode", this);
+    audioProcessor.apvts.removeParameterListener("filterType", this);
+
     polyToggle.setLookAndFeel(nullptr);
     toggleLookAndFeel.reset();
+
+    mixSlider.setLookAndFeel(nullptr);
+    resonanceSlider.setLookAndFeel(nullptr);
+    cutoffSlider.setLookAndFeel(nullptr);
+    outputSlider.setLookAndFeel(nullptr);
+
+    knobPrincipalLookAndFeel.reset();
 }
 
 //==============================================================================
@@ -208,8 +279,13 @@ void AndesJXAudioProcessorEditor::resized()
     filterKeycenterSelector.setBounds(230, 250, 25, 16);
     presetSelector.setBounds(205, 390, 100, 16);
     polyToggle.setBounds(410, 50, 50, 16);
-
-    // Asegúrate de conservar tus posiciones existentes para los demás controles
+    glideModeSelector.setBounds(320, 50, 50, 16);
+    filterTypeControl.setBounds(50, 200, 80, 16);
+    
+    mixSlider.setBounds(100, 120, 48, 64);
+    resonanceSlider.setBounds(160, 120, 48, 64);
+    cutoffSlider.setBounds(220, 120, 48, 64);
+    outputSlider.setBounds(280, 120, 48, 64);
 }
 
 void AndesJXAudioProcessorEditor::parameterChanged(const juce::String& parameterID, float newValue)
@@ -219,7 +295,7 @@ void AndesJXAudioProcessorEditor::parameterChanged(const juce::String& parameter
         // newValue viene en 0..1: convertimos a índice seguro
         if (auto* p = audioProcessor.apvts.getParameter(parameterID))
         {
-            const int index = p->convertFrom0to1(newValue);
+            const int index = juce::roundToInt(p->convertFrom0to1(newValue));
             const bool isPoly = (index == 1);
 
             // parameterChanged se llama desde hilo de audio -> usar callAsync para actualizar UI
@@ -228,6 +304,18 @@ void AndesJXAudioProcessorEditor::parameterChanged(const juce::String& parameter
                 polyToggle.setToggleState(isPoly, juce::dontSendNotification);
                 polyToggle.setButtonText(isPoly ? "Poly" : "Mono");
             });
+        }
+    }
+    else if (parameterID == "filterType")
+    {
+        if (auto* p = audioProcessor.apvts.getParameter(parameterID))
+        {
+            const int index = juce::roundToInt(p->convertFrom0to1(newValue));
+
+            juce::MessageManager::callAsync([this, index]()
+                {
+                    filterTypeControl.setSelectedIndex(index, juce::dontSendNotification);
+                });
         }
     }
 }
