@@ -29,7 +29,7 @@ public:
     {
         level = multiplier * (level - target) + target;
         if (target >= 2.0f && level >= target * 0.99f) {
-            // Transición Attack ? Decay
+            // Transicient attack ? Decay
             multiplier = decayMultiplier;
             target = sustainLevel;
         }

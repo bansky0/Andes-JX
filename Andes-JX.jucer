@@ -8,6 +8,8 @@
               pluginCode="NRAN">
   <MAINGROUP id="YlH79P" name="AndesJX">
     <GROUP id="{149E7E08-7849-D2D4-B605-867CE5708629}" name="LookAndFeel">
+      <FILE id="r5gg7c" name="SecondaryKnobLookAndFeel.h" compile="0" resource="0"
+            file="Source/LookAndFeel/SecondaryKnobLookAndFeel.h"/>
       <FILE id="CeT7qD" name="KnobPrincipalLookAndFeel.h" compile="0" resource="0"
             file="Source/LookAndFeel/KnobPrincipalLookAndFeel.h"/>
       <FILE id="iQ839j" name="ComboBoxLookAndFeel.h" compile="0" resource="0"

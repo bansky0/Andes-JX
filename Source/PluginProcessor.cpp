@@ -804,9 +804,9 @@ juce::AudioProcessorValueTreeState::ParameterLayout AndesJXAudioProcessor::creat
 
     auto oscMixStringFromValue = [](float value, int)
     {
-        char s[16] = { 0 };
-        snprintf(s, 16, "%4.0f:%2.0f", 100.0 - 0.5f * value, 0.5f * value);
-        return juce::String(s);
+        const int osc1 = juce::roundToInt(100.0f - 0.5f * value);
+        const int osc2 = juce::roundToInt(0.5f * value);
+        return juce::String(osc1) + ":" + juce::String(osc2);
     };
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(

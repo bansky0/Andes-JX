@@ -55,6 +55,12 @@ private:
     juce::Slider cutoffSlider;
     juce::Slider outputSlider;
 
+    using SliderAttachment = juce::AudioProcessorValueTreeState::SliderAttachment;
+    std::unique_ptr<SliderAttachment> mixAttachment;
+    std::unique_ptr<SliderAttachment> resonanceAttachment;
+    std::unique_ptr<SliderAttachment> cutoffAttachment;
+    std::unique_ptr<SliderAttachment> outputAttachment;
+
     std::unique_ptr<KnobPrincipalLookAndFeel> knobPrincipalLookAndFeel;
 
     // Poly toggle + lookandfeel

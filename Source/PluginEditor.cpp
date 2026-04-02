@@ -75,21 +75,36 @@ AndesJXAudioProcessorEditor::AndesJXAudioProcessorEditor (AndesJXAudioProcessor&
     configureKnob(resonanceSlider);
     configureKnob(cutoffSlider);
     configureKnob(outputSlider);
+    
+	mixSlider.setComponentID("oscMix");
+	resonanceSlider.setComponentID("filterReso");
+	cutoffSlider.setComponentID("filterFreq");
+    outputSlider.setComponentID("output");
+    /*
+    mixSlider.setRange(0.0, 100.0, 1.0);
+    mixSlider.setValue(50.0);
 
-    outputSlider.setRange(-24.0, 6.0, 0.5);
-    outputSlider.setValue(0.0);
-
-    outputSlider.textFromValueFunction = [](double value)
+    mixSlider.textFromValueFunction = [](double value)
         {
-            if (std::abs(value) < 0.05)
-                return juce::String("0 dB");
+            return juce::String(juce::roundToInt(value)) + " %";
+        };
+    
+    resonanceSlider.setRange(0.0, 100.0, 1.0);
+    resonanceSlider.setValue(0.0);
 
-            if (value > 0.0)
-                return "+" + juce::String(value, 1) + " dB";
-
-            return juce::String(value, 1) + " dB";
+    resonanceSlider.textFromValueFunction = [](double value)
+        {
+            return juce::String(juce::roundToInt(value)) + " %";
         };
 
+	cutoffSlider.setRange(0.0, 100.0, 1.0);
+	cutoffSlider.setValue(50.0);
+
+    cutoffSlider.textFromValueFunction = [](double value)
+        {
+            return juce::String(juce::roundToInt(value)) + " %";
+        };
+        */
     //==========================================================================
     // Filter Keycenter Combo
     filterKeycenterSelector.setLookAndFeel(comboBoxLookAndFeel.get());
@@ -224,6 +239,11 @@ AndesJXAudioProcessorEditor::AndesJXAudioProcessorEditor (AndesJXAudioProcessor&
     osc2WaveAttachment = std::make_unique<ComboBoxAttachment>(audioProcessor.apvts, "osc2Wave", osc2WaveSelector);
     filterKeycenterAttachment = std::make_unique<ComboBoxAttachment>(audioProcessor.apvts, "filterKeycenter", filterKeycenterSelector);
     glideModeAttachment = std::make_unique<ComboBoxAttachment>(audioProcessor.apvts, "glideMode", glideModeSelector);
+    
+    mixAttachment = std::make_unique<SliderAttachment>(audioProcessor.apvts, "oscMix", mixSlider);
+	resonanceAttachment = std::make_unique<SliderAttachment>(audioProcessor.apvts, "filterReso", resonanceSlider);
+	cutoffAttachment = std::make_unique<SliderAttachment>(audioProcessor.apvts, "filterFreq", cutoffSlider);
+    outputAttachment = std::make_unique<SliderAttachment>(audioProcessor.apvts, "outputLevel", outputSlider);
 }
 
 AndesJXAudioProcessorEditor::~AndesJXAudioProcessorEditor()
@@ -282,10 +302,10 @@ void AndesJXAudioProcessorEditor::resized()
     glideModeSelector.setBounds(320, 50, 50, 16);
     filterTypeControl.setBounds(50, 200, 80, 16);
     
-    mixSlider.setBounds(100, 120, 48, 64);
-    resonanceSlider.setBounds(160, 120, 48, 64);
-    cutoffSlider.setBounds(220, 120, 48, 64);
-    outputSlider.setBounds(280, 120, 48, 64);
+    mixSlider.setBounds(90, 50, 64, 64);
+    resonanceSlider.setBounds(90, 225, 64, 64);
+    cutoffSlider.setBounds(30, 225, 64, 64);
+    outputSlider.setBounds(390, 330, 80, 80);
 }
 
 void AndesJXAudioProcessorEditor::parameterChanged(const juce::String& parameterID, float newValue)
