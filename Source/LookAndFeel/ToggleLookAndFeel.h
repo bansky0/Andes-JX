@@ -10,11 +10,14 @@
 
 #pragma once
 #include <JuceHeader.h>
+#include "AndesBaseLookAndFeel.h"
+#include "AndesStyleHelpers.h"
 
-class ToggleLookAndFeel : public juce::LookAndFeel_V4
+class ToggleLookAndFeel : public AndesBaseLookAndFeel
 {
 public:
     ToggleLookAndFeel() = default;
+    ~ToggleLookAndFeel() override = default;
 
     enum ColourIds
     {
@@ -24,10 +27,12 @@ public:
         outlineColourId = 0x2001003
     };
 
-    void setDefaultToggleBackgroundOn(juce::Colour c) noexcept { bgOn = c; }
-    void setDefaultToggleBackgroundOff(juce::Colour c) noexcept { bgOff = c; }
-    void setDefaultToggleText(juce::Colour c) noexcept { text = c; }
+    void setDefaultToggleBackgroundOn(juce::Colour c) noexcept { bgOnOverride = c; }
+    void setDefaultToggleBackgroundOff(juce::Colour c) noexcept { bgOffOverride = c; }
+    void setDefaultToggleText(juce::Colour c) noexcept { textOverride = c; }
+
     void setToggleFontHeight(float newHeight) noexcept { toggleFontHeight = newHeight; }
+    void setCornerRadius(float newRadius) noexcept { cornerRadius = newRadius; }
 
     void drawToggleButton(juce::Graphics&,
         juce::ToggleButton&,
@@ -40,9 +45,16 @@ public:
     }
 
 private:
-    juce::Colour bgOn{ juce::Colour::fromRGB(0x4F, 0x6B, 0x72) };
-    juce::Colour bgOff{ juce::Colour::fromRGB(0x3F, 0x55, 0x5B) };
-    juce::Colour text{ juce::Colour::fromRGB(0xD9, 0xD9, 0xD9) };
+    juce::Colour resolveBackgroundOn() const noexcept;
+    juce::Colour resolveBackgroundOff() const noexcept;
+    juce::Colour resolveTextColour() const noexcept;
+    juce::Colour resolveOutlineColour() const noexcept;
 
-    float toggleFontHeight{ 11.0f };
+private:
+    std::optional<juce::Colour> bgOnOverride;
+    std::optional<juce::Colour> bgOffOverride;
+    std::optional<juce::Colour> textOverride;
+
+    float toggleFontHeight{ fontMedium() };
+    float cornerRadius{ smallRadius() };
 };

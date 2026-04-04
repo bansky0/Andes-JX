@@ -8,6 +8,11 @@
               pluginCode="NRAN">
   <MAINGROUP id="YlH79P" name="AndesJX">
     <GROUP id="{149E7E08-7849-D2D4-B605-867CE5708629}" name="LookAndFeel">
+      <FILE id="V2B1qx" name="AndesBaseLookAndFeel.h" compile="0" resource="0"
+            file="Source/LookAndFeel/AndesBaseLookAndFeel.h"/>
+      <FILE id="gloroE" name="AndesStyleHelpers.h" compile="0" resource="0"
+            file="Source/LookAndFeel/AndesStyleHelpers.h"/>
+      <FILE id="kICnei" name="AndesTheme.h" compile="0" resource="0" file="Source/LookAndFeel/AndesTheme.h"/>
       <FILE id="r5gg7c" name="SecondaryKnobLookAndFeel.h" compile="0" resource="0"
             file="Source/LookAndFeel/SecondaryKnobLookAndFeel.h"/>
       <FILE id="CeT7qD" name="KnobPrincipalLookAndFeel.h" compile="0" resource="0"
@@ -24,6 +29,8 @@
     <GROUP id="{CB42C506-BBE1-44CD-68AF-A6080BADE870}" name="Assets">
       <FILE id="xuVtxb" name="AndesKnobPrincipal2.png" compile="0" resource="1"
             file="Assets/AndesKnobPrincipal2.png"/>
+      <FILE id="i3wNy4" name="AndesKnobSecondary.png" compile="0" resource="1"
+            file="Assets/AndesKnobSecondary.png"/>
       <FILE id="O2YSb8" name="backgroundAndesJX.png" compile="0" resource="1"
             file="Assets/backgroundAndesJX.png"/>
     </GROUP>

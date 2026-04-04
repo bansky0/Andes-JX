@@ -10,108 +10,63 @@
  
 #pragma once
 #include <JuceHeader.h>
- 
-class ComboBoxLookAndFeel : public juce::LookAndFeel_V4
+#include "AndesBaseLookAndFeel.h"
+#include "AndesStyleHelpers.h"
+
+class ComboBoxLookAndFeel : public AndesBaseLookAndFeel
 {
 public:
     ComboBoxLookAndFeel() = default;
+    ~ComboBoxLookAndFeel() override = default;
 
-    // allow editor to override defaults
-    void setDefaultComboBackground(juce::Colour c) noexcept { comboBg = c; }
-    void setDefaultComboText(juce::Colour c) noexcept       { comboText = c; }
+    // Optional local overrides
+    void setDefaultComboBackground(juce::Colour c) noexcept { comboBgOverride = c; }
+    void setDefaultComboText(juce::Colour c) noexcept { comboTextOverride = c; }
 
-    void setComboBoxFontHeight(float newHeight) noexcept    { comboBoxFontHeight = newHeight; }
-    void setPopupMenuFontHeight(float newHeight) noexcept   { popupMenuFontHeight = newHeight; }
+    void setComboBoxFontHeight(float newHeight) noexcept { comboBoxFontHeight = newHeight; }
+    void setPopupMenuFontHeight(float newHeight) noexcept { popupMenuFontHeight = newHeight; }
+    void setCornerRadius(float newRadius) noexcept { cornerRadius = newRadius; }
 
-    // Popup uses inverted colors by default (can be overridden via setColour on the ComboBox)
-    void drawPopupMenuBackground(juce::Graphics& g, int width, int height) override
-    {
-        (void) width; (void) height;
-        g.fillAll(popupBg());
-    }
-
-    void drawPopupMenuItem(juce::Graphics& g, const juce::Rectangle<int>& area,
-                           bool isSeparator, bool /*isActive*/, bool isHighlighted, bool /*isTicked*/,
-                           bool /*hasSubMenu*/, const juce::String& text,
-                           const juce::String& /*shortcutKeyText*/,
-                           const juce::Drawable* /*icon*/,
-                           const juce::Colour* textColourToUse) override
-    {
-        if (isSeparator)
-        {
-            juce::Rectangle<int> r(area.reduced(5, 0));
-            g.setColour(juce::Colours::grey);
-            g.fillRect(r.removeFromTop(1));
-            return;
-        }
-
-        // background for the item (popupBg is already inverted)
-        g.setColour(popupBg());
-        g.fillRect(area);
-
-        if (isHighlighted)
-        {
-            g.setColour(popupText().withAlpha(0.12f));
-            g.fillRect(area);
-        }
-
-        const float availableHeight = (float) juce::jmax(1, area.getHeight() - 2);
-        const float fontHeight = juce::jmin(popupMenuFontHeight, availableHeight);
-        g.setFont(fontHeight);
-
-        juce::Colour drawTextColour = (textColourToUse != nullptr) ? *textColourToUse : popupText();
-        g.setColour(drawTextColour);
-        g.drawFittedText(text, area.reduced(10, 0), juce::Justification::centredLeft, 1);
-    }
-
-    void drawComboBox(juce::Graphics& g, int width, int height, bool isButtonDown,
-        int /*buttonX*/, int /*buttonY*/, int /*buttonW*/, int /*buttonH*/,
+    void drawComboBox(juce::Graphics& g,
+        int width,
+        int height,
+        bool isButtonDown,
+        int /*buttonX*/,
+        int /*buttonY*/,
+        int /*buttonW*/,
+        int /*buttonH*/,
         juce::ComboBox& box) override
     {
-        auto bounds = juce::Rectangle<float>(0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height)).reduced(0.5f);
+        auto bounds = juce::Rectangle<float>(0.0f, 0.0f,
+            static_cast<float>(width),
+            static_cast<float>(height)).reduced(0.5f);
 
-        const auto boxBg = box.findColour(juce::ComboBox::backgroundColourId, true);
-        auto bg = boxBg.isTransparent() ? comboBg : boxBg;
+        auto bg = resolveComboBackground(box);
+        bg = AndesStyleHelpers::applyInteractionState(bg, box.isMouseOver(), isButtonDown, false);
 
-        const auto outline = bg.darker(0.35f);
-
-        if (isButtonDown)
-            bg = bg.darker(0.08f);
-
-        // fondo exterior
-        g.setColour(bg);
-        g.fillRoundedRectangle(bounds, 2.0f);
-
-        // borde
-        g.setColour(outline);
-        g.drawRoundedRectangle(bounds, 2.0f, 1.0f);
-
-        // panel interno sutil para profundidad
-        auto inner = bounds.reduced(1.5f);
-        auto topSection = inner.removeFromTop(bounds.getHeight() * 0.45f);
-
-        g.setColour(bg.brighter(0.03f));
-        g.fillRoundedRectangle(topSection, 2.0f);
+        AndesStyleHelpers::drawPanel(g, bounds, bg, cornerRadius, true);
     }
 
-    // Configure internal Label: font, colours, padding.
-    void positionComboBoxText (juce::ComboBox& box, juce::Label& label) override
+    void positionComboBoxText(juce::ComboBox& box, juce::Label& label) override
     {
-        label.setBounds (1, 1,
-                         box.getWidth() - 2,      // usar todo el ancho
-                         box.getHeight() - 2);
+        // Deja espacio a la derecha por si luego customizas flecha/arrow zone
+        constexpr int leftPadding = 1;
+        constexpr int rightPadding = 1;
+        constexpr int topBottomPad = 1;
 
-        label.setFont (getComboBoxFont (box));
+        label.setBounds(leftPadding,
+            topBottomPad,
+            box.getWidth() - leftPadding - rightPadding,
+            box.getHeight() - (topBottomPad * 2));
 
-        // Asegurarse de que el Label use el color de texto del ComboBox (o el fallback del LAF)
-        const juce::Colour textCol = box.findColour(juce::ComboBox::textColourId);
-        label.setColour(juce::Label::textColourId, textCol);
+        label.setFont(getComboBoxFont(box));
+        label.setJustificationType(juce::Justification::centredLeft);
+        label.setMinimumHorizontalScale(1.0f);
 
-        // transparencia en el fondo del label
+        const auto textCol = box.findColour(juce::ComboBox::textColourId, true);
+        label.setColour(juce::Label::textColourId, textCol.isTransparent() ? resolveComboText(box) : textCol);
         label.setColour(juce::Label::backgroundColourId, juce::Colours::transparentBlack);
-
-        // no editable por defecto
-        label.setEditable(false, false);
+        label.setEditable(false, false, false);
     }
 
     juce::Font getComboBoxFont(juce::ComboBox& /*box*/) override
@@ -119,13 +74,109 @@ public:
         return juce::Font(juce::FontOptions(comboBoxFontHeight));
     }
 
+    void drawPopupMenuBackground(juce::Graphics& g, int width, int height) override
+    {
+        auto area = juce::Rectangle<float>(0.0f, 0.0f,
+            static_cast<float>(width),
+            static_cast<float>(height));
+
+        g.fillAll(resolvePopupBackground());
+        g.setColour(outlineColour());
+        g.drawRect(area.toNearestInt(), 1);
+    }
+
+    void drawPopupMenuItem(juce::Graphics& g,
+        const juce::Rectangle<int>& area,
+        bool isSeparator,
+        bool isActive,
+        bool isHighlighted,
+        bool /*isTicked*/,
+        bool /*hasSubMenu*/,
+        const juce::String& text,
+        const juce::String& /*shortcutKeyText*/,
+        const juce::Drawable* /*icon*/,
+        const juce::Colour* textColourToUse) override
+    {
+        if (isSeparator)
+        {
+            auto line = area.reduced(6, 0).withHeight(1).withY(area.getCentreY());
+            g.setColour(outlineColour().withAlpha(0.7f));
+            g.fillRect(line);
+            return;
+        }
+
+        auto bg = resolvePopupBackground();
+        auto fg = (textColourToUse != nullptr) ? *textColourToUse : resolvePopupText();
+
+        if (!isActive)
+            fg = fg.withAlpha(0.4f);
+
+        g.setColour(bg);
+        g.fillRect(area);
+
+        if (isHighlighted)
+        {
+            g.setColour(resolvePopupText().withAlpha(0.12f));
+            g.fillRect(area);
+        }
+
+        auto itemArea = area;
+        /*
+        if (isTicked)
+        {
+            auto tickArea = itemArea.removeFromLeft(14);
+            g.setColour(fg);
+            g.setFont(juce::Font(juce::FontOptions(popupMenuFontHeight)));
+            g.drawText("•", tickArea, juce::Justification::centred);
+        }
+        */
+        g.setColour(fg);
+        g.setFont(juce::Font(juce::FontOptions(popupMenuFontHeight)));
+        g.drawFittedText(text, area.reduced(8, 0), juce::Justification::centredLeft, 1);
+    }
+
 private:
-    juce::Colour popupBg()  const noexcept { return comboText; } // inverted: popup bg = combo text
-    juce::Colour popupText()const noexcept { return comboBg; }   // inverted: popup text = combo bg
+    juce::Colour resolveComboBackground(juce::ComboBox& box) const noexcept
+    {
+        const auto boxBg = box.findColour(juce::ComboBox::backgroundColourId, true);
 
-    juce::Colour comboBg  { juce::Colour::fromRGB(0x4F, 0x6B, 0x72) }; // fallback #4F6B72
-    juce::Colour comboText{ juce::Colour::fromRGB(0xD9, 0xD9, 0xD9) }; // fallback #D9D9D9
+        if (!boxBg.isTransparent())
+            return boxBg;
 
-    float comboBoxFontHeight { 11.0f };
-    float popupMenuFontHeight { 11.0f };
+        if (comboBgOverride.has_value())
+            return *comboBgOverride;
+
+        return panelColour();
+    }
+
+    juce::Colour resolveComboText(juce::ComboBox& box) const noexcept
+    {
+        const auto boxText = box.findColour(juce::ComboBox::textColourId, true);
+
+        if (!boxText.isTransparent())
+            return boxText;
+
+        if (comboTextOverride.has_value())
+            return *comboTextOverride;
+
+        return textColour();
+    }
+
+    juce::Colour resolvePopupBackground() const noexcept
+    {
+        return comboTextOverride.has_value() ? *comboTextOverride : textColour();
+    }
+
+    juce::Colour resolvePopupText() const noexcept
+    {
+        return comboBgOverride.has_value() ? *comboBgOverride : panelColour();
+    }
+
+private:
+    std::optional<juce::Colour> comboBgOverride;
+    std::optional<juce::Colour> comboTextOverride;
+
+    float comboBoxFontHeight{ fontMedium() };
+    float popupMenuFontHeight{ fontMedium() };
+    float cornerRadius{ smallRadius() };
 };
