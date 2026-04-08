@@ -8,6 +8,8 @@
               pluginCode="NRAN">
   <MAINGROUP id="YlH79P" name="AndesJX">
     <GROUP id="{149E7E08-7849-D2D4-B605-867CE5708629}" name="LookAndFeel">
+      <FILE id="mWHy4M" name="FaderLookAndFeel.h" compile="0" resource="0"
+            file="Source/LookAndFeel/FaderLookAndFeel.h"/>
       <FILE id="V2B1qx" name="AndesBaseLookAndFeel.h" compile="0" resource="0"
             file="Source/LookAndFeel/AndesBaseLookAndFeel.h"/>
       <FILE id="gloroE" name="AndesStyleHelpers.h" compile="0" resource="0"
@@ -27,6 +29,8 @@
             file="Source/LookAndFeel/SegmentedButtonLookAndFeel.h"/>
     </GROUP>
     <GROUP id="{CB42C506-BBE1-44CD-68AF-A6080BADE870}" name="Assets">
+      <FILE id="kdOdIa" name="AndesFaderADSR.png" compile="0" resource="1"
+            file="Assets/AndesFaderADSR.png"/>
       <FILE id="xuVtxb" name="AndesKnobPrincipal2.png" compile="0" resource="1"
             file="Assets/AndesKnobPrincipal2.png"/>
       <FILE id="i3wNy4" name="AndesKnobSecondary.png" compile="0" resource="1"

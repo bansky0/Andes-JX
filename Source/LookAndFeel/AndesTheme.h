@@ -18,6 +18,7 @@ struct AndesTheme
         static inline const juce::Colour panel = juce::Colour::fromRGB(0x4F, 0x6B, 0x72);
         static inline const juce::Colour panelDark = juce::Colour::fromRGB(0x3F, 0x55, 0x5B);
         static inline const juce::Colour text = juce::Colour::fromRGB(0xD9, 0xD9, 0xD9);
+        static inline const juce::Colour textMuted = text.withAlpha(0.6f);
         static inline const juce::Colour outline = panel.darker(0.35f);
     };
 

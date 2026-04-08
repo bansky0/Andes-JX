@@ -489,6 +489,9 @@ void AndesJXAudioProcessor::update()
     synth.filterEnvAttack = std::exp(-inverseSampleRate * std::exp(5.5f - 0.075f * filterAttackParam->get()));
     synth.filterEnvDecay = std::exp(-inverseSampleRate * std::exp(5.5f - 0.075f * filterDecayParam->get()));
     synth.filterEnvSustain = filterSustainParam->get() / 100.0f;
+    float fr = filterReleaseParam->get();
+    float frSafe = juce::jmax(1.0f, fr);
+    synth.filterEnvRelease = std::exp(-inverseSampleRate * std::exp(5.5f - 0.075f * frSafe));
     /*
     float fr = filterReleaseParam->get();
     if (fr < 1.0f) synth.filterEnvRelease = 0.75f;

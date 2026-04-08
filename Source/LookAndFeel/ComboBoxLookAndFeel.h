@@ -60,7 +60,7 @@ public:
             box.getHeight() - (topBottomPad * 2));
 
         label.setFont(getComboBoxFont(box));
-        label.setJustificationType(juce::Justification::centredLeft);
+        label.setJustificationType(juce::Justification::centred);
         label.setMinimumHorizontalScale(1.0f);
 
         const auto textCol = box.findColour(juce::ComboBox::textColourId, true);
@@ -71,7 +71,7 @@ public:
 
     juce::Font getComboBoxFont(juce::ComboBox& /*box*/) override
     {
-        return juce::Font(juce::FontOptions(comboBoxFontHeight));
+        return AndesStyleHelpers::makeUIFont(comboBoxFontHeight);
     }
 
     void drawPopupMenuBackground(juce::Graphics& g, int width, int height) override
@@ -131,7 +131,7 @@ public:
         }
         */
         g.setColour(fg);
-        g.setFont(juce::Font(juce::FontOptions(popupMenuFontHeight)));
+        g.setFont(AndesStyleHelpers::makeUIFont(popupMenuFontHeight));
         g.drawFittedText(text, area.reduced(8, 0), juce::Justification::centredLeft, 1);
     }
 

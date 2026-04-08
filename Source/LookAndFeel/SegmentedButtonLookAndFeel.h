@@ -48,7 +48,7 @@ public:
             colour = colour.withAlpha(button.getToggleState() ? 1.0f : 0.85f);
 
         g.setColour(colour);
-        g.setFont(juce::Font(juce::FontOptions(fontHeight)));
+        g.setFont(AndesStyleHelpers::makeUIFont(fontHeight));
         g.drawFittedText(button.getButtonText(),
             area,
             juce::Justification::centred,

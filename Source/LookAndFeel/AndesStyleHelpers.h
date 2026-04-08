@@ -14,6 +14,14 @@
 
 namespace AndesStyleHelpers
 {
+    inline juce::Font makeUIFont(float height)
+    {
+        juce::Font font(juce::FontOptions{ height });
+        font.setTypefaceName("Arial");
+        font.setBold(false);
+        return font;
+    }
+
     inline void drawPanel(juce::Graphics& g,
         juce::Rectangle<float> bounds,
         juce::Colour fill,

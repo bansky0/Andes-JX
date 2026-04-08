@@ -41,7 +41,7 @@ public:
 
     juce::Font getTextButtonFont(juce::TextButton&, int) override
     {
-        return juce::Font(juce::FontOptions(toggleFontHeight));
+        return AndesStyleHelpers::makeUIFont(toggleFontHeight);
     }
 
 private:

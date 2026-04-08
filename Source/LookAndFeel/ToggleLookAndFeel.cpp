@@ -38,7 +38,7 @@ void ToggleLookAndFeel::drawToggleButton(juce::Graphics& g,
         textCol = textCol.withAlpha(isToggled ? 1.0f : 0.85f);
 
     g.setColour(textCol);
-    g.setFont(juce::Font(juce::FontOptions(toggleFontHeight)));
+    g.setFont(AndesStyleHelpers::makeUIFont(toggleFontHeight));
 
     g.drawFittedText(button.getButtonText(),
         button.getLocalBounds().reduced(6, 0),
