@@ -89,6 +89,25 @@ AndesJXAudioProcessorEditor::AndesJXAudioProcessorEditor(AndesJXAudioProcessor& 
     initialisePolyToggle();
     initialiseFilterTypeControl();
     initialiseAttachments();
+
+    updateLFORateValueLabel();
+    updateFilterLFOValueLabel();
+
+    updateFilterEnvValueLabel();
+    updateFilterKeycenterValueLabel();
+    updateFilterKeytrackValueLabel();
+
+    updateFilterVelocityValueLabel();
+    updateVibratoValueLabel();
+    updateGlideBendValueLabel();
+    updateGlideRateValueLabel();
+
+    updateOscTuneValueLabel();
+    updateStereoWidthValueLabel();
+    updateNoiseValueLabel();
+    updateOscFineValueLabel();
+    updateOctaveValueLabel();
+    updateTuningValueLabel();
 }
 
 void AndesJXAudioProcessorEditor::initialiseBackground()
@@ -122,7 +141,7 @@ void AndesJXAudioProcessorEditor::initialiseLookAndFeels()
 
     secondaryKnobLookAndFeel = std::make_unique<SecondaryKnobLookAndFeel>();
     secondaryKnobLookAndFeel->setTextFontHeight(7.5f);
-    secondaryKnobLookAndFeel->setShowValueText(true);
+    secondaryKnobLookAndFeel->setShowValueText(false);
     secondaryKnobLookAndFeel->setTextInset(3);
 
     faderLookAndFeel = std::make_unique<FaderLookAndFeel>();
@@ -159,32 +178,118 @@ void AndesJXAudioProcessorEditor::setupKnob(juce::Slider& slider)
     addAndMakeVisible(slider);
 }
 
+juce::String AndesJXAudioProcessorEditor::formatOscTuneValue(double value) const
+{
+    const int semitones = juce::roundToInt(value);
+    const juce::String nbsp = juce::String::charToString(0xA0);
+
+    if (semitones == 0)
+        return nbsp + nbsp + "0 st";
+
+    if (semitones > 0)
+    {
+        if (semitones < 10)
+            return nbsp + "+" + juce::String(semitones) + " st";
+
+        return "+" + juce::String(semitones) + " st";
+    }
+
+    if (std::abs(semitones) < 10)
+        return nbsp + juce::String(semitones) + " st";
+
+    return juce::String(semitones) + " st";
+}
+
+void AndesJXAudioProcessorEditor::updateOscTuneValueLabel()
+{
+    oscTuneValueLabel.setText(formatOscTuneValue(oscTuneSlider.getValue()),
+        juce::dontSendNotification);
+}
+
 void AndesJXAudioProcessorEditor::initialiseOscTuneControl()
 {
     setupSecondaryKnob(oscTuneSlider);
     oscTuneSlider.setComponentID("oscTune");
 
-    oscTuneSlider.textFromValueFunction = [](double value)
+    oscTuneValueLabel.setJustificationType(juce::Justification::centred);
+    oscTuneValueLabel.setColour(juce::Label::textColourId, AndesTheme::Colours::text);
+    oscTuneValueLabel.setFont(juce::Font(juce::FontOptions(7.5f)));
+    oscTuneValueLabel.setInterceptsMouseClicks(false, false);
+
+    updateOscTuneValueLabel();
+
+    oscTuneSlider.onValueChange = [this]()
         {
-            const int semitones = juce::roundToInt(value);
-
-            if (semitones > 0)
-                return "+" + juce::String(semitones);
-
-            return juce::String(semitones);
+            updateOscTuneValueLabel();
         };
+
+    addAndMakeVisible(oscTuneValueLabel);
 }
 
+juce::String AndesJXAudioProcessorEditor::formatStereoWidthValue(double value) const
+{
+    const int width = juce::roundToInt(value);
+    const juce::String nbsp = juce::String::charToString(0xA0);
+
+    if (width == 0)
+        return nbsp + nbsp + "0 %";
+
+    if (width < 10)
+        return nbsp + nbsp + juce::String(width) + " %";
+
+    if (width < 100)
+        return nbsp + juce::String(width) + " %";
+
+    return juce::String(width) + " %";
+}
+
+void AndesJXAudioProcessorEditor::updateStereoWidthValueLabel()
+{
+    stereoWidthValueLabel.setText(formatStereoWidthValue(stereoWidthSlider.getValue()),
+        juce::dontSendNotification);
+}
 
 void AndesJXAudioProcessorEditor::initialiseStereoWidthControl()
 {
     setupSecondaryKnob(stereoWidthSlider);
     stereoWidthSlider.setComponentID("stereoWidth");
 
-    stereoWidthSlider.textFromValueFunction = [](double value)
+    stereoWidthValueLabel.setJustificationType(juce::Justification::centred);
+    stereoWidthValueLabel.setColour(juce::Label::textColourId, AndesTheme::Colours::text);
+    stereoWidthValueLabel.setFont(juce::Font(juce::FontOptions(7.5f)));
+    stereoWidthValueLabel.setInterceptsMouseClicks(false, false);
+
+    updateStereoWidthValueLabel();
+
+    stereoWidthSlider.onValueChange = [this]()
         {
-            return juce::String(juce::roundToInt(value));
+            updateStereoWidthValueLabel();
         };
+
+    addAndMakeVisible(stereoWidthValueLabel);
+}
+
+juce::String AndesJXAudioProcessorEditor::formatNoiseValue(double value) const
+{
+    const int noise = juce::roundToInt(value);
+    const juce::String nbsp = juce::String::charToString(0xA0);
+
+    if (noise == 0)
+        return nbsp + nbsp + "0 %";
+
+    if (noise < 10)
+        return nbsp + nbsp + juce::String(noise) + " %";
+
+    if (noise < 100)
+        return nbsp + juce::String(noise) + " %";
+
+    return juce::String(noise) + " %";
+}
+
+void AndesJXAudioProcessorEditor::updateNoiseValueLabel()
+{
+    noiseValueLabel.setText(formatNoiseValue(noiseSlider.getValue()),
+        juce::dontSendNotification);
 }
 
 void AndesJXAudioProcessorEditor::initialiseNoiseControl()
@@ -192,10 +297,48 @@ void AndesJXAudioProcessorEditor::initialiseNoiseControl()
     setupSecondaryKnob(noiseSlider);
     noiseSlider.setComponentID("noise");
 
-    noiseSlider.textFromValueFunction = [](double value)
+    noiseValueLabel.setJustificationType(juce::Justification::centred);
+    noiseValueLabel.setColour(juce::Label::textColourId, AndesTheme::Colours::text);
+    noiseValueLabel.setFont(juce::Font(juce::FontOptions(7.5f)));
+    noiseValueLabel.setInterceptsMouseClicks(false, false);
+
+    updateNoiseValueLabel();
+
+    noiseSlider.onValueChange = [this]()
         {
-            return juce::String(juce::roundToInt(value));
+            updateNoiseValueLabel();
         };
+
+    addAndMakeVisible(noiseValueLabel);
+}
+
+juce::String AndesJXAudioProcessorEditor::formatOscFineValue(double value) const
+{
+    const float cents = static_cast<float>(value);
+
+    const juce::String nbsp = juce::String::charToString(0xA0);
+
+    if (std::abs(cents) < 0.05f)
+        return nbsp + nbsp + nbsp + "0.0 c";
+
+    if (cents > 0.0f)
+    {
+        if (cents < 10.0f)
+            return nbsp + nbsp + "+" + juce::String(cents, 1) + " c";
+
+        return "+" + juce::String(cents, 1) + " c";
+    }
+
+    if (std::abs(cents) < 10.0f)
+        return nbsp + nbsp + juce::String(cents, 1) + " c";
+
+    return juce::String(cents, 1) + " c";
+}
+
+void AndesJXAudioProcessorEditor::updateOscFineValueLabel()
+{
+    oscFineValueLabel.setText(formatOscFineValue(oscFineSlider.getValue()),
+        juce::dontSendNotification);
 }
 
 void AndesJXAudioProcessorEditor::initialiseOscFineControl()
@@ -203,18 +346,39 @@ void AndesJXAudioProcessorEditor::initialiseOscFineControl()
     setupSecondaryKnob(oscFineSlider);
     oscFineSlider.setComponentID("oscFine");
 
-    oscFineSlider.textFromValueFunction = [](double value)
+    oscFineValueLabel.setJustificationType(juce::Justification::centred);
+    oscFineValueLabel.setColour(juce::Label::textColourId, AndesTheme::Colours::text);
+    oscFineValueLabel.setFont(juce::Font(juce::FontOptions(7.5f)));
+    oscFineValueLabel.setInterceptsMouseClicks(false, false);
+
+    updateOscFineValueLabel();
+
+    oscFineSlider.onValueChange = [this]()
         {
-            const float cents = static_cast<float>(value);
-
-            if (std::abs(cents) < 0.05f)
-                return juce::String("0.0 c");
-
-            if (cents > 0.0f)
-                return "+" + juce::String(cents, 1) + " c";
-
-            return juce::String(cents, 1) + " c";
+            updateOscFineValueLabel();
         };
+
+    addAndMakeVisible(oscFineValueLabel);
+}
+
+juce::String AndesJXAudioProcessorEditor::formatOctaveValue(double value) const
+{
+    const int oct = juce::roundToInt(value);
+    const juce::String nbsp = juce::String::charToString(0xA0);
+
+    if (oct == 0)
+        return nbsp + nbsp + "0 oct";
+
+    if (oct > 0)
+        return nbsp + "+" + juce::String(oct) + " oct";
+
+    return nbsp + juce::String(oct) + " oct";
+}
+
+void AndesJXAudioProcessorEditor::updateOctaveValueLabel()
+{
+    octaveValueLabel.setText(formatOctaveValue(octaveSlider.getValue()),
+        juce::dontSendNotification);
 }
 
 void AndesJXAudioProcessorEditor::initialiseOctaveControl()
@@ -222,15 +386,47 @@ void AndesJXAudioProcessorEditor::initialiseOctaveControl()
     setupSecondaryKnob(octaveSlider);
     octaveSlider.setComponentID("octave");
 
-    octaveSlider.textFromValueFunction = [](double value)
+    octaveValueLabel.setJustificationType(juce::Justification::centred);
+    octaveValueLabel.setColour(juce::Label::textColourId, AndesTheme::Colours::text);
+    octaveValueLabel.setFont(juce::Font(juce::FontOptions(7.5f)));
+    octaveValueLabel.setInterceptsMouseClicks(false, false);
+
+    updateOctaveValueLabel();
+
+    octaveSlider.onValueChange = [this]()
         {
-            const int oct = juce::roundToInt(value);
-
-            if (oct > 0)
-                return "+" + juce::String(oct);
-
-            return juce::String(oct);
+            updateOctaveValueLabel();
         };
+
+    addAndMakeVisible(octaveValueLabel);
+}
+
+juce::String AndesJXAudioProcessorEditor::formatTuningValue(double value) const
+{
+    const float cents = static_cast<float>(value);
+    const juce::String nbsp = juce::String::charToString(0xA0);
+
+    if (std::abs(cents) < 0.05f)
+        return nbsp + nbsp + nbsp + "0.0 c";
+
+    if (cents > 0.0f)
+    {
+        if (cents < 10.0f)
+            return nbsp + "+" + juce::String(cents, 1) + " c";
+
+        return "+" + juce::String(cents, 1) + " c";
+    }
+
+    if (std::abs(cents) < 10.0f)
+        return nbsp + juce::String(cents, 1) + " c";
+
+    return juce::String(cents, 1) + " c";
+}
+
+void AndesJXAudioProcessorEditor::updateTuningValueLabel()
+{
+    tuningValueLabel.setText(formatTuningValue(tuningSlider.getValue()),
+        juce::dontSendNotification);
 }
 
 void AndesJXAudioProcessorEditor::initialiseTuningControl()
@@ -238,18 +434,42 @@ void AndesJXAudioProcessorEditor::initialiseTuningControl()
     setupSecondaryKnob(tuningSlider);
     tuningSlider.setComponentID("tuning");
 
-    tuningSlider.textFromValueFunction = [](double value)
+    tuningValueLabel.setJustificationType(juce::Justification::centred);
+    tuningValueLabel.setColour(juce::Label::textColourId, AndesTheme::Colours::text);
+    tuningValueLabel.setFont(juce::Font(juce::FontOptions(7.5f)));
+    tuningValueLabel.setInterceptsMouseClicks(false, false);
+
+    updateTuningValueLabel();
+
+    tuningSlider.onValueChange = [this]()
         {
-            const float cents = static_cast<float>(value);
-
-            if (std::abs(cents) < 0.05f)
-                return juce::String("0");
-
-            if (cents > 0.0f)
-                return "+" + juce::String(cents, 1);
-
-            return juce::String(cents, 1);
+            updateTuningValueLabel();
         };
+
+    addAndMakeVisible(tuningValueLabel);
+}
+
+juce::String AndesJXAudioProcessorEditor::formatGlideRateValue(double value) const
+{
+    const int rate = juce::roundToInt(value);
+    const juce::String nbsp = juce::String::charToString(0xA0);
+
+    if (rate == 0)
+        return nbsp + nbsp + "0 %";
+
+    if (rate < 10)
+        return nbsp + nbsp + juce::String(rate) + " %";
+
+    if (rate < 100)
+        return nbsp + juce::String(rate) + " %";
+
+    return juce::String(rate) + " %";
+}
+
+void AndesJXAudioProcessorEditor::updateGlideRateValueLabel()
+{
+    glideRateValueLabel.setText(formatGlideRateValue(glideRateSlider.getValue()),
+        juce::dontSendNotification);
 }
 
 void AndesJXAudioProcessorEditor::initialiseGlideRateControl()
@@ -257,10 +477,47 @@ void AndesJXAudioProcessorEditor::initialiseGlideRateControl()
     setupSecondaryKnob(glideRateSlider);
     glideRateSlider.setComponentID("glideRate");
 
-    glideRateSlider.textFromValueFunction = [](double value)
+    glideRateValueLabel.setJustificationType(juce::Justification::centred);
+    glideRateValueLabel.setColour(juce::Label::textColourId, AndesTheme::Colours::text);
+    glideRateValueLabel.setFont(juce::Font(juce::FontOptions(7.5f)));
+    glideRateValueLabel.setInterceptsMouseClicks(false, false);
+
+    updateGlideRateValueLabel();
+
+    glideRateSlider.onValueChange = [this]()
         {
-            return juce::String(juce::roundToInt(value));
+            updateGlideRateValueLabel();
         };
+
+    addAndMakeVisible(glideRateValueLabel);
+}
+
+juce::String AndesJXAudioProcessorEditor::formatGlideBendValue(double value) const
+{
+    const float semis = static_cast<float>(value);
+    const juce::String nbsp = juce::String::charToString(0xA0);
+
+    if (std::abs(semis) < 0.005f)
+        return nbsp + nbsp + nbsp + "0.0 st";
+
+    if (semis > 0.0f)
+    {
+        if (semis < 10.0f)
+            return nbsp + "+" + juce::String(semis, 1) + " st";
+
+        return "+" + juce::String(semis, 1) + " st";
+    }
+
+    if (std::abs(semis) < 10.0f)
+        return nbsp + juce::String(semis, 1) + " st";
+
+    return juce::String(semis, 1) + " st";
+}
+
+void AndesJXAudioProcessorEditor::updateGlideBendValueLabel()
+{
+    glideBendValueLabel.setText(formatGlideBendValue(glideBendSlider.getValue()),
+        juce::dontSendNotification);
 }
 
 void AndesJXAudioProcessorEditor::initialiseGlideBendControl()
@@ -268,18 +525,38 @@ void AndesJXAudioProcessorEditor::initialiseGlideBendControl()
     setupSecondaryKnob(glideBendSlider);
     glideBendSlider.setComponentID("glideBend");
 
-    glideBendSlider.textFromValueFunction = [](double value)
+    glideBendValueLabel.setJustificationType(juce::Justification::centred);
+    glideBendValueLabel.setColour(juce::Label::textColourId, AndesTheme::Colours::text);
+    glideBendValueLabel.setFont(juce::Font(juce::FontOptions(7.5f)));
+    glideBendValueLabel.setInterceptsMouseClicks(false, false);
+
+    updateGlideBendValueLabel();
+
+    glideBendSlider.onValueChange = [this]()
         {
-            const float semis = static_cast<float>(value);
-
-            if (std::abs(semis) < 0.005f)
-                return juce::String("0");
-
-            if (semis > 0.0f)
-                return "+" + juce::String(semis, 1);
-
-            return juce::String(semis, 1);
+            updateGlideBendValueLabel();
         };
+
+    addAndMakeVisible(glideBendValueLabel);
+}
+
+juce::String AndesJXAudioProcessorEditor::formatVibratoValue(double value) const
+{
+    const float v = static_cast<float>(value);
+
+    if (std::abs(v) < 0.05f)
+        return "OFF";
+
+    if (v < 0.0f)
+        return "PWM " + juce::String(-v, 1);
+
+    return "VIB " + juce::String(v, 1);
+}
+
+void AndesJXAudioProcessorEditor::updateVibratoValueLabel()
+{
+    vibratoValueLabel.setText(formatVibratoValue(vibratoSlider.getValue()),
+        juce::dontSendNotification);
 }
 
 void AndesJXAudioProcessorEditor::initialiseVibratoControl()
@@ -287,18 +564,54 @@ void AndesJXAudioProcessorEditor::initialiseVibratoControl()
     setupSecondaryKnob(vibratoSlider);
     vibratoSlider.setComponentID("vibrato");
 
-    vibratoSlider.textFromValueFunction = [](double value)
+    vibratoValueLabel.setJustificationType(juce::Justification::centred);
+    vibratoValueLabel.setColour(juce::Label::textColourId, AndesTheme::Colours::text);
+    vibratoValueLabel.setFont(juce::Font(juce::FontOptions(7.5f)));
+    vibratoValueLabel.setInterceptsMouseClicks(false, false);
+
+    updateVibratoValueLabel();
+
+    vibratoSlider.onValueChange = [this]()
         {
-            const float v = static_cast<float>(value);
-
-            if (std::abs(v) < 0.05f)
-                return juce::String("0.0");
-
-            if (v < 0.0f)
-                return "PWM " + juce::String(-v, 1);
-
-            return juce::String(v, 1);
+            updateVibratoValueLabel();
         };
+
+    addAndMakeVisible(vibratoValueLabel);
+}
+
+juce::String AndesJXAudioProcessorEditor::formatFilterVelocityValue(double value) const
+{
+    const float v = static_cast<float>(value);
+    const juce::String nbsp = juce::String::charToString(0xA0);
+
+    if (v < -90.0f)
+        return "OFF";
+
+    if (std::abs(v) < 0.5f)
+        return nbsp + nbsp + "0 %";
+
+    if (v > 0.0f)
+    {
+        const int iv = juce::roundToInt(v);
+
+        if (iv < 10)
+            return nbsp + "+" + juce::String(iv) + " %";
+
+        return "+" + juce::String(iv) + " %";
+    }
+
+    const int iv = juce::roundToInt(v);
+
+    if (std::abs(iv) < 10)
+        return nbsp + juce::String(iv) + " %";
+
+    return juce::String(iv) + " %";
+}
+
+void AndesJXAudioProcessorEditor::updateFilterVelocityValueLabel()
+{
+    filterVelocityValueLabel.setText(formatFilterVelocityValue(filterVelocitySlider.getValue()),
+        juce::dontSendNotification);
 }
 
 void AndesJXAudioProcessorEditor::initialiseFilterVelocityControl()
@@ -306,21 +619,51 @@ void AndesJXAudioProcessorEditor::initialiseFilterVelocityControl()
     setupSecondaryKnob(filterVelocitySlider);
     filterVelocitySlider.setComponentID("filterVelocity");
 
-    filterVelocitySlider.textFromValueFunction = [](double value)
+    filterVelocityValueLabel.setJustificationType(juce::Justification::centred);
+    filterVelocityValueLabel.setColour(juce::Label::textColourId, AndesTheme::Colours::text);
+    filterVelocityValueLabel.setFont(juce::Font(juce::FontOptions(7.5f)));
+    filterVelocityValueLabel.setInterceptsMouseClicks(false, false);
+
+    updateFilterVelocityValueLabel();
+
+    filterVelocitySlider.onValueChange = [this]()
         {
-            const float v = static_cast<float>(value);
-
-            if (v < -90.0f)
-                return juce::String("OFF");
-
-            if (std::abs(v) < 0.5f)
-                return juce::String("0");
-
-            if (v > 0.0f)
-                return "+" + juce::String(juce::roundToInt(v));
-
-            return juce::String(juce::roundToInt(v));
+            updateFilterVelocityValueLabel();
         };
+
+    addAndMakeVisible(filterVelocityValueLabel);
+}
+
+juce::String AndesJXAudioProcessorEditor::formatFilterEnvValue(double value) const
+{
+    const float v = static_cast<float>(value);
+    const juce::String nbsp = juce::String::charToString(0xA0);
+
+    if (std::abs(v) < 0.05f)
+        return nbsp + nbsp + "0 %";
+
+    if (v > 0.0f)
+    {
+        const int iv = juce::roundToInt(v);
+
+        if (iv < 10)
+            return nbsp + "+" + juce::String(iv) + " %";
+
+        return "+" + juce::String(iv) + " %";
+    }
+
+    const int iv = juce::roundToInt(v);
+
+    if (std::abs(iv) < 10)
+        return nbsp + juce::String(iv) + " %";
+
+    return juce::String(iv) + " %";
+}
+
+void AndesJXAudioProcessorEditor::updateFilterEnvValueLabel()
+{
+    filterEnvValueLabel.setText(formatFilterEnvValue(filterEnvSlider.getValue()),
+        juce::dontSendNotification);
 }
 
 void AndesJXAudioProcessorEditor::initialiseFilterEnvControl()
@@ -328,18 +671,42 @@ void AndesJXAudioProcessorEditor::initialiseFilterEnvControl()
     setupSecondaryKnob(filterEnvSlider);
     filterEnvSlider.setComponentID("filterEnv");
 
-    filterEnvSlider.textFromValueFunction = [](double value)
+    filterEnvValueLabel.setJustificationType(juce::Justification::centred);
+    filterEnvValueLabel.setColour(juce::Label::textColourId, AndesTheme::Colours::text);
+    filterEnvValueLabel.setFont(juce::Font(juce::FontOptions(7.5f)));
+    filterEnvValueLabel.setInterceptsMouseClicks(false, false);
+
+    updateFilterEnvValueLabel();
+
+    filterEnvSlider.onValueChange = [this]()
         {
-            const float v = static_cast<float>(value);
-
-            if (std::abs(v) < 0.05f)
-                return juce::String("0");
-
-            if (v > 0.0f)
-                return "+" + juce::String(juce::roundToInt(v));
-
-            return juce::String(juce::roundToInt(v));
+            updateFilterEnvValueLabel();
         };
+
+    addAndMakeVisible(filterEnvValueLabel);
+}
+
+juce::String AndesJXAudioProcessorEditor::formatFilterLFOValue(double value) const
+{
+    const int lfo = juce::roundToInt(value);
+    const juce::String nbsp = juce::String::charToString(0xA0);
+
+    if (lfo == 0)
+        return nbsp + nbsp + "0 %";
+
+    if (lfo < 10)
+        return nbsp + nbsp + juce::String(lfo) + " %";
+
+    if (lfo < 100)
+        return nbsp + juce::String(lfo) + " %";
+
+    return juce::String(lfo) + " %";
+}
+
+void AndesJXAudioProcessorEditor::updateFilterLFOValueLabel()
+{
+    filterLFOValueLabel.setText(formatFilterLFOValue(filterLFOSlider.getValue()),
+        juce::dontSendNotification);
 }
 
 void AndesJXAudioProcessorEditor::initialiseFilterLFOControl()
@@ -347,10 +714,42 @@ void AndesJXAudioProcessorEditor::initialiseFilterLFOControl()
     setupSecondaryKnob(filterLFOSlider);
     filterLFOSlider.setComponentID("filterLFO");
 
-    filterLFOSlider.textFromValueFunction = [](double value)
+    filterLFOValueLabel.setJustificationType(juce::Justification::centred);
+    filterLFOValueLabel.setColour(juce::Label::textColourId, AndesTheme::Colours::text);
+    filterLFOValueLabel.setFont(juce::Font(juce::FontOptions(7.5f)));
+    filterLFOValueLabel.setInterceptsMouseClicks(false, false);
+
+    updateFilterLFOValueLabel();
+
+    filterLFOSlider.onValueChange = [this]()
         {
-            return juce::String(juce::roundToInt(value));
+            updateFilterLFOValueLabel();
         };
+
+    addAndMakeVisible(filterLFOValueLabel);
+}
+
+juce::String AndesJXAudioProcessorEditor::formatFilterKeytrackValue(double value) const
+{
+    const int keytrack = juce::roundToInt(value);
+    const juce::String nbsp = juce::String::charToString(0xA0);
+
+    if (keytrack == 0)
+        return nbsp + nbsp + "0 %";
+
+    if (keytrack < 10)
+        return nbsp + nbsp + juce::String(keytrack) + " %";
+
+    if (keytrack < 100)
+        return nbsp + juce::String(keytrack) + " %";
+
+    return juce::String(keytrack) + " %";
+}
+
+void AndesJXAudioProcessorEditor::updateFilterKeytrackValueLabel()
+{
+    filterKeytrackValueLabel.setText(formatFilterKeytrackValue(filterKeytrackSlider.getValue()),
+        juce::dontSendNotification);
 }
 
 void AndesJXAudioProcessorEditor::initialiseFilterKeytrackControl()
@@ -358,10 +757,33 @@ void AndesJXAudioProcessorEditor::initialiseFilterKeytrackControl()
     setupSecondaryKnob(filterKeytrackSlider);
     filterKeytrackSlider.setComponentID("filterKeytrack");
 
-    filterKeytrackSlider.textFromValueFunction = [](double value)
+    filterKeytrackValueLabel.setJustificationType(juce::Justification::centred);
+    filterKeytrackValueLabel.setColour(juce::Label::textColourId, AndesTheme::Colours::text);
+    filterKeytrackValueLabel.setFont(juce::Font(juce::FontOptions(7.5f)));
+    filterKeytrackValueLabel.setInterceptsMouseClicks(false, false);
+
+    updateFilterKeytrackValueLabel();
+
+    filterKeytrackSlider.onValueChange = [this]()
         {
-            return juce::String(juce::roundToInt(value));
+            updateFilterKeytrackValueLabel();
         };
+
+    addAndMakeVisible(filterKeytrackValueLabel);
+}
+
+juce::String AndesJXAudioProcessorEditor::formatLFORateValue(double value) const
+{
+    const float normalised = static_cast<float>(value);
+    const float lfoHz = std::exp(7.0f * normalised - 4.0f);
+
+    return juce::String(lfoHz, 3) + " Hz";
+}
+
+void AndesJXAudioProcessorEditor::updateLFORateValueLabel()
+{
+    lfoRateValueLabel.setText(formatLFORateValue(lfoRateSlider.getValue()),
+        juce::dontSendNotification);
 }
 
 void AndesJXAudioProcessorEditor::initialiseLFORateControl()
@@ -369,12 +791,40 @@ void AndesJXAudioProcessorEditor::initialiseLFORateControl()
     setupSecondaryKnob(lfoRateSlider);
     lfoRateSlider.setComponentID("lfoRate");
 
-    lfoRateSlider.textFromValueFunction = [](double value)
+    lfoRateValueLabel.setJustificationType(juce::Justification::centred);
+    lfoRateValueLabel.setColour(juce::Label::textColourId, AndesTheme::Colours::text);
+    lfoRateValueLabel.setFont(juce::Font(juce::FontOptions(7.5f)));
+    lfoRateValueLabel.setInterceptsMouseClicks(false, false);
+
+    updateLFORateValueLabel();
+
+    lfoRateSlider.onValueChange = [this]()
         {
-            const float normalised = static_cast<float>(value);
-            const float lfoHz = std::exp(7.0f * normalised - 4.0f);
-            return juce::String(lfoHz, 3);
+            updateLFORateValueLabel();
         };
+
+    addAndMakeVisible(lfoRateValueLabel);
+}
+
+juce::String AndesJXAudioProcessorEditor::formatFilterKeycenterValue(double value) const
+{
+    static const char* noteNames[] =
+    {
+        "C", "C#", "D", "D#", "E", "F",
+        "F#", "G", "G#", "A", "A#", "B"
+    };
+
+    const int note = juce::roundToInt(value);
+    const int octave = (note / 12) - 1;
+    const int noteNameIndex = note % 12;
+
+    return juce::String(noteNames[noteNameIndex]) + juce::String(octave);
+}
+
+void AndesJXAudioProcessorEditor::updateFilterKeycenterValueLabel()
+{
+    filterKeycenterValueLabel.setText(formatFilterKeycenterValue(filterKeycenterSlider.getValue()),
+        juce::dontSendNotification);
 }
 
 void AndesJXAudioProcessorEditor::initialiseFilterKeycenterControl()
@@ -384,20 +834,19 @@ void AndesJXAudioProcessorEditor::initialiseFilterKeycenterControl()
 
     filterKeycenterSlider.setDoubleClickReturnValue(true, 60.0);
 
-    filterKeycenterSlider.textFromValueFunction = [](double value)
+    filterKeycenterValueLabel.setJustificationType(juce::Justification::centred);
+    filterKeycenterValueLabel.setColour(juce::Label::textColourId, AndesTheme::Colours::text);
+    filterKeycenterValueLabel.setFont(juce::Font(juce::FontOptions(7.5f)));
+    filterKeycenterValueLabel.setInterceptsMouseClicks(false, false);
+
+    updateFilterKeycenterValueLabel();
+
+    filterKeycenterSlider.onValueChange = [this]()
         {
-            static const char* noteNames[] =
-            {
-                "C", "C#", "D", "D#", "E", "F",
-                "F#", "G", "G#", "A", "A#", "B"
-            };
-
-            const int note = juce::roundToInt(value);
-            const int octave = (note / 12) - 1;
-            const int noteNameIndex = note % 12;
-
-            return juce::String(noteNames[noteNameIndex]) + juce::String(octave);
+            updateFilterKeycenterValueLabel();
         };
+
+    addAndMakeVisible(filterKeycenterValueLabel);
 }
 
 void AndesJXAudioProcessorEditor::setupFader(juce::Slider& slider)
@@ -740,25 +1189,39 @@ void AndesJXAudioProcessorEditor::resized()
     cutoffSlider.setBounds(25, 225, 64, 64);
     outputSlider.setBounds(385, 325, 80, 80);
 
+    oscTuneValueLabel.setBounds(160, 22, 34, 10);
     oscTuneSlider.setBounds(160, 30, 36, 36);
+    stereoWidthValueLabel.setBounds(196, 22, 48, 10);
     stereoWidthSlider.setBounds(200, 30, 36, 36);
+    noiseValueLabel.setBounds(236, 22, 48, 10);
     noiseSlider.setBounds(240, 30, 36, 36);
+    oscFineValueLabel.setBounds(160, 82, 34, 10);
     oscFineSlider.setBounds(160, 90, 36, 36);
+    octaveValueLabel.setBounds(198, 82, 34, 10);
     octaveSlider.setBounds(200, 90, 36, 36);
+    tuningValueLabel.setBounds(240, 82, 34, 10);
     tuningSlider.setBounds(240, 90, 36, 36);
 
+    glideRateValueLabel.setBounds(302, 82, 48, 10);
     glideRateSlider.setBounds(308, 90, 36, 36);
+    glideBendValueLabel.setBounds(342, 82, 48, 10);
     glideBendSlider.setBounds(348, 90, 36, 36);
 
+    vibratoValueLabel.setBounds(392, 82, 52, 10);
     vibratoSlider.setBounds(400, 90, 36, 36);
+    filterVelocityValueLabel.setBounds(432, 82, 52, 10);
     filterVelocitySlider.setBounds(440, 90, 36, 36);
 
+    filterEnvValueLabel.setBounds(194, 232, 48, 10);
     filterEnvSlider.setBounds(200, 240, 36, 36);
-    //filterLFOSlider.setBounds(220, 190, 36, 36);
+    filterKeytrackValueLabel.setBounds(174, 172, 52, 10);
     filterKeytrackSlider.setBounds(180, 180, 36, 36);
+    filterKeycenterValueLabel.setBounds(219, 172, 48, 10);
     filterKeycenterSlider.setBounds(225, 180, 36, 36);
 
+    lfoRateValueLabel.setBounds(25, 340, 52, 10);
     lfoRateSlider.setBounds(35, 350, 36, 36);
+    filterLFOValueLabel.setBounds(80, 342, 48, 10);
     filterLFOSlider.setBounds(85, 350, 36, 36);
 
     // Amp ADSR

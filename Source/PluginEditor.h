@@ -56,20 +56,35 @@ private:
     juce::Slider outputSlider;
 
     juce::Slider oscTuneSlider;
+    juce::Label oscTuneValueLabel;
     juce::Slider stereoWidthSlider;
+    juce::Label stereoWidthValueLabel;
     juce::Slider noiseSlider;
+    juce::Label noiseValueLabel;
     juce::Slider oscFineSlider;
+    juce::Label oscFineValueLabel;
     juce::Slider octaveSlider;
+    juce::Label octaveValueLabel;
     juce::Slider tuningSlider;
+    juce::Label tuningValueLabel;
     juce::Slider glideBendSlider;
+    juce::Label glideBendValueLabel;
     juce::Slider glideRateSlider;
+    juce::Label glideRateValueLabel;
     juce::Slider vibratoSlider;
+    juce::Label vibratoValueLabel;
 	juce::Slider filterVelocitySlider;
+    juce::Label filterVelocityValueLabel;
     juce::Slider filterEnvSlider;
+    juce::Label filterEnvValueLabel;
 	juce::Slider filterLFOSlider;
+    juce::Label filterLFOValueLabel;
     juce::Slider filterKeycenterSlider;
+    juce::Label filterKeycenterValueLabel;
 	juce::Slider filterKeytrackSlider;
+    juce::Label filterKeytrackValueLabel;
     juce::Slider lfoRateSlider;
+    juce::Label lfoRateValueLabel;
 
     juce::Slider ampAttackSlider;
     juce::Slider ampDecaySlider;
@@ -164,6 +179,41 @@ private:
     void initialisePolyToggle();
     void initialiseFilterTypeControl();
     void initialiseAttachments();
+
+    juce::String formatLFORateValue(double value) const;
+    void updateLFORateValueLabel();
+
+    juce::String formatFilterLFOValue(double value) const;
+    void updateFilterLFOValueLabel();
+    juce::String formatFilterEnvValue(double value) const;
+    void updateFilterEnvValueLabel();
+    juce::String formatFilterKeycenterValue(double value) const;
+    void updateFilterKeycenterValueLabel();
+    juce::String formatFilterKeytrackValue(double value) const;
+    void updateFilterKeytrackValueLabel();
+
+    juce::String formatFilterVelocityValue(double value) const;
+    void updateFilterVelocityValueLabel();
+    juce::String formatVibratoValue(double value) const;
+    void updateVibratoValueLabel();
+
+    juce::String formatGlideBendValue(double value) const;
+    void updateGlideBendValueLabel();
+    juce::String formatGlideRateValue(double value) const;
+    void updateGlideRateValueLabel();
+
+    juce::String formatTuningValue(double value) const;
+    void updateTuningValueLabel();
+    juce::String formatOctaveValue(double value) const;
+    void updateOctaveValueLabel();
+    juce::String formatNoiseValue(double value) const;
+    void updateNoiseValueLabel();
+    juce::String formatStereoWidthValue(double value) const;
+    void updateStereoWidthValueLabel();
+    juce::String formatOscTuneValue(double value) const;
+    void updateOscTuneValueLabel();
+    juce::String formatOscFineValue(double value) const;
+    void updateOscFineValueLabel();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AndesJXAudioProcessorEditor)
 };
