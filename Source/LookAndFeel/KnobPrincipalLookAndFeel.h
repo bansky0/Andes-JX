@@ -139,8 +139,8 @@ private:
 
         if (id == "oscMix")
         {
-            const int osc1 = juce::roundToInt(100.0f - 0.5f * value);
-            const int osc2 = juce::roundToInt(0.5f * value);
+            const int osc2 = juce::roundToInt(value);
+            const int osc1 = 100 - osc2;
             return juce::String(osc1) + ":" + juce::String(osc2);
         }
 

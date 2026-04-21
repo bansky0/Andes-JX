@@ -22,7 +22,8 @@
 /**
 */
 class AndesJXAudioProcessorEditor  : public juce::AudioProcessorEditor,
-                                     private juce::AudioProcessorValueTreeState::Listener
+                                     private juce::AudioProcessorValueTreeState::Listener,
+                                     private juce::ChangeListener
 {
 public:
     AndesJXAudioProcessorEditor (AndesJXAudioProcessor&);
@@ -145,7 +146,8 @@ private:
     
     // AudioProcessorValueTreeState listener
     void parameterChanged(const juce::String& parameterID, float newValue) override;
-    
+    void changeListenerCallback(juce::ChangeBroadcaster* source) override;
+
     void initialiseBackground();
     void initialiseLookAndFeels();
 

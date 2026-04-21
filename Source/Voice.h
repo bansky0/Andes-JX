@@ -93,6 +93,7 @@ struct Voice
 
     float render(float noise, bool /*usePwm*/)
     {
+        /*
         // si se activa esta parte es el jx tradicional (sonido tradicional)
         float sample1 = osc1.nextSample();
         //float sample2 = osc2.nextSample() * osc2Gain;
@@ -101,6 +102,20 @@ struct Voice
         float output = sample1 - sample2 + noise;
         //filter.updateCoefficients(cutoff, Q);
         //output = filter.render(output);
+        */
+        
+        float sample1 = osc1.nextSample();
+        float sample2 = osc2.nextSample();
+        /*
+        const float osc1Gain = 1.0f - osc2Gain;
+        const float outputDry = sample1 * osc1Gain + sample2 * osc2Gain;
+
+        float output = outputDry + noise;
+        */
+        const float osc1Gain = std::sqrt(1.0f - osc2Gain);
+        const float osc2LinGain = std::sqrt(osc2Gain);
+        float output = sample1 * osc1Gain + sample2 * osc2LinGain + noise;
+
         if (filter != nullptr)
             output = filter->render(output);
         float envelope = env.nextValue();

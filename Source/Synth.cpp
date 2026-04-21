@@ -17,7 +17,7 @@
 Synth::Synth()
 {
     sampleRate = 48000.0f; // originally 44100.0f
-    setFilterType(FILTER_SVF);
+    setFilterType(FilterType::SVF);
 }
 
 Synth::~Synth()
@@ -994,9 +994,17 @@ void Synth::setFilterType(FilterType type)
 
         switch (filterType)
         {
-        case FILTER_SVF:  voice.filter = &voice.svfFilter;  break;
-        case FILTER_MOOG: voice.filter = &voice.moogFilter; break;
-        default:          voice.filter = &voice.svfFilter;  break;
+        case FilterType::SVF:
+            voice.filter = &voice.svfFilter;
+            break;
+
+        case FilterType::Moog:
+            voice.filter = &voice.moogFilter;
+            break;
+
+        default:
+            voice.filter = &voice.svfFilter;
+            break;
         }
 
         voice.filter->setSampleRate(sampleRate);

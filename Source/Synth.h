@@ -63,13 +63,13 @@ public:
     juce::LinearSmoothedValue<float> outputLevelSmoother;
 
     // Tipo de filtro seleccionado
-    enum FilterType
+    enum class FilterType
     {
-        FILTER_SVF = 0,   // State Variable Filter (actual)
-        FILTER_MOOG = 1   // Moog Ladder (Huovilainen)
+        SVF = 0,// State Variable Filter (actual)
+        Moog = 1// Moog Ladder (Huovilainen)
     };
 
-    FilterType filterType = FILTER_SVF;  // Por defecto SVF
+    FilterType filterType = FilterType::SVF;  // Por defecto SVF
 
     void setFilterType(FilterType type);  // Método para cambiar filtro
 

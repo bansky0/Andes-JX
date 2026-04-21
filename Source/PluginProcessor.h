@@ -13,10 +13,9 @@
 #include "Preset.h"
 #include <juce_dsp/juce_dsp.h>
 
+#define PARAMETER_ID(str) inline const juce::ParameterID str { #str, 1 };
 namespace ParameterID
 {
-    #define PARAMETER_ID(str) const juce::ParameterID str(#str, 1);
-
     PARAMETER_ID(osc1Wave)
     PARAMETER_ID(osc2Wave)
     PARAMETER_ID(oscMix)
@@ -25,6 +24,7 @@ namespace ParameterID
     PARAMETER_ID(glideMode)
     PARAMETER_ID(glideRate)
     PARAMETER_ID(glideBend)
+    PARAMETER_ID(filterType)
     PARAMETER_ID(filterFreq)
     PARAMETER_ID(filterReso)
     PARAMETER_ID(filterEnv)
@@ -48,17 +48,14 @@ namespace ParameterID
     PARAMETER_ID(outputLevel)
     PARAMETER_ID(polyMode)
     PARAMETER_ID(stereoWidth)
-
-    #undef PARAMETER_ID
-
-    inline constexpr auto filterType = "filterType";
 }
-
+#undef PARAMETER_ID
 //==============================================================================
 /**
 */
-class AndesJXAudioProcessor  : public juce::AudioProcessor,
-                            private juce::ValueTree::Listener
+class AndesJXAudioProcessor : public juce::AudioProcessor,
+                              private juce::ValueTree::Listener,
+                              public juce::ChangeBroadcaster
 {
 public:
     //==============================================================================
@@ -99,14 +96,34 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
+    bool isCustomPresetActive() const noexcept { return isCustomPreset; }
+    bool isLoadingPreset() const noexcept { return loadingPreset; }
+
     juce::AudioProcessorValueTreeState apvts { *this, nullptr, "Parameters", createParameterLayout() };
 
 private:
     juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
 
-    void valueTreePropertyChanged(juce::ValueTree&, const juce::Identifier&) override
+    void valueTreePropertyChanged(juce::ValueTree&, const juce::Identifier& property) override
     {
+        static const juce::Identifier currentProgramID{ "currentProgram" };
+        static const juce::Identifier isCustomPresetID{ "isCustomPreset" };
+
         parametersChanged.store(true);
+
+        if (!loadingPreset)
+        {
+            if (property != currentProgramID && property != isCustomPresetID)
+            {
+                const bool newIsCustom = !currentStateMatchesProgram();
+
+                if (isCustomPreset != newIsCustom)
+                {
+                    isCustomPreset = newIsCustom;
+                    sendChangeMessage();
+                }
+            }
+        }
     }
 
     std::atomic<bool> parametersChanged { false };
@@ -117,9 +134,13 @@ private:
     void splitBufferByEvents(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages);
     void handleMIDI(uint8_t data0, uint8_t data1, uint8_t data2);
     void render(juce::AudioBuffer<float>& buffer, int sampleCount, int bufferOffset);
+    void splitBufferByEventsOptimized(juce::dsp::AudioBlock<float>& block, juce::MidiBuffer& midiMessages);
 
     std::vector<Preset> presets;
-    int currentProgram;
+    int currentProgram = 0;
+    bool isCustomPreset = false;
+    bool loadingPreset = false;
+    bool currentStateMatchesProgram() const;
 
     Synth synth;
 
@@ -131,6 +152,7 @@ private:
     juce::AudioParameterChoice* glideModeParam;
     juce::AudioParameterFloat* glideRateParam;
     juce::AudioParameterFloat* glideBendParam;
+    juce::AudioParameterChoice* filterTypeParam;
     juce::AudioParameterFloat* filterFreqParam;
     juce::AudioParameterFloat* filterResoParam;
     juce::AudioParameterFloat* filterEnvParam;
@@ -164,8 +186,7 @@ private:
     std::atomic<bool>  ccSustainDown{ false }; // CC64
 
     std::unique_ptr<juce::dsp::Oversampling<float>> oversampling;
-    void splitBufferByEventsOptimized(juce::dsp::AudioBlock<float>& block, juce::MidiBuffer& midiMessages);
-    juce::AudioParameterChoice* filterTypeParam = nullptr;
+
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AndesJXAudioProcessor)
 };

@@ -23,4 +23,4 @@ static constexpr int MAX_VOICES = 8;
 static constexpr int LFO_MAX = 32;
 
 // Numero de parametros presets
-const int NUM_PARAMS = 28;
+const int NUM_PARAMS = 32;

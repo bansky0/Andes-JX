@@ -90,6 +90,8 @@ AndesJXAudioProcessorEditor::AndesJXAudioProcessorEditor(AndesJXAudioProcessor& 
     initialiseFilterTypeControl();
     initialiseAttachments();
 
+    audioProcessor.addChangeListener(this);
+
     updateLFORateValueLabel();
     updateFilterLFOValueLabel();
 
@@ -925,16 +927,25 @@ void AndesJXAudioProcessorEditor::initialisePresetSelector()
 {
     setupCombo(presetSelector);
 
+    presetSelector.clear();
+
     const int numPrograms = audioProcessor.getNumPrograms();
     for (int i = 0; i < numPrograms; ++i)
         presetSelector.addItem(audioProcessor.getProgramName(i), i + 1);
 
-    presetSelector.setSelectedId(audioProcessor.getCurrentProgram() + 1, juce::dontSendNotification);
+    presetSelector.addSeparator();
+    presetSelector.addItem("Custom", 1000);
+
+    if (audioProcessor.isCustomPresetActive())
+        presetSelector.setSelectedId(1000, juce::dontSendNotification);
+    else
+        presetSelector.setSelectedId(audioProcessor.getCurrentProgram() + 1, juce::dontSendNotification);
 
     presetSelector.onChange = [this]()
         {
             const int id = presetSelector.getSelectedId();
-            if (id > 0)
+
+            if (id >= 1 && id <= audioProcessor.getNumPrograms())
                 audioProcessor.setCurrentProgram(id - 1);
         };
 }
@@ -1032,6 +1043,8 @@ void AndesJXAudioProcessorEditor::initialiseAttachments()
 
 AndesJXAudioProcessorEditor::~AndesJXAudioProcessorEditor()
 {
+    audioProcessor.removeChangeListener(this);
+
     // Reset look-and-feel on each combo BEFORE destroying the LAF
     oscWaveSelector.setLookAndFeel(nullptr);
     osc2WaveSelector.setLookAndFeel(nullptr);
@@ -1266,5 +1279,16 @@ void AndesJXAudioProcessorEditor::parameterChanged(const juce::String& parameter
                     filterTypeControl.setSelectedIndex(index, juce::dontSendNotification);
                 });
         }
+    }
+}
+
+void AndesJXAudioProcessorEditor::changeListenerCallback(juce::ChangeBroadcaster* source)
+{
+    if (source == &audioProcessor)
+    {
+        if (audioProcessor.isCustomPresetActive())
+            presetSelector.setSelectedId(1000, juce::dontSendNotification);
+        else
+            presetSelector.setSelectedId(audioProcessor.getCurrentProgram() + 1, juce::dontSendNotification);
     }
 }

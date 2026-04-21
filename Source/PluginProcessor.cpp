@@ -116,17 +116,24 @@ int AndesJXAudioProcessor::getCurrentProgram()
     return currentProgram;
 }
 
-void AndesJXAudioProcessor::setCurrentProgram (int index)
+bool AndesJXAudioProcessor::currentStateMatchesProgram() const
 {
-    currentProgram = index;
+    if (currentProgram < 0 || currentProgram >= static_cast<int>(presets.size()))
+        return false;
 
-    juce::RangedAudioParameter *params[NUM_PARAMS] = {
+    const Preset& preset = presets[currentProgram];
+
+    const juce::RangedAudioParameter* params[NUM_PARAMS] =
+    {
+        osc1WaveParam,
+        osc2WaveParam,
         oscMixParam,
         oscTuneParam,
         oscFineParam,
         glideModeParam,
         glideRateParam,
         glideBendParam,
+        filterTypeParam,
         filterFreqParam,
         filterResoParam,
         filterEnvParam,
@@ -149,6 +156,66 @@ void AndesJXAudioProcessor::setCurrentProgram (int index)
         tuningParam,
         outputLevelParam,
         polyModeParam,
+        stereoWidthParam
+    };
+
+    for (int i = 0; i < NUM_PARAMS; ++i)
+    {
+        const float currentValue = params[i]->convertFrom0to1(params[i]->getValue());
+        const float presetValue = preset.param[i];
+
+        // tolerancia pequeña para floats
+        if (std::abs(currentValue - presetValue) > 0.001f)
+            return false;
+    }
+
+    return true;
+}
+
+void AndesJXAudioProcessor::setCurrentProgram (int index)
+{
+    if (index < 0 || index >= static_cast<int>(presets.size()))
+        return;
+
+    loadingPreset = true;
+
+    currentProgram = index;
+	isCustomPreset = false;
+
+    juce::RangedAudioParameter* params[NUM_PARAMS] =
+    {
+        osc1WaveParam,
+        osc2WaveParam,
+        oscMixParam,
+        oscTuneParam,
+        oscFineParam,
+        glideModeParam,
+        glideRateParam,
+        glideBendParam,
+        filterTypeParam,
+        filterFreqParam,
+        filterResoParam,
+        filterEnvParam,
+        filterLFOParam,
+        filterVelocityParam,
+        filterKeytrackParam,
+        filterKeycenterParam,
+        filterAttackParam,
+        filterDecayParam,
+        filterSustainParam,
+        filterReleaseParam,
+        envAttackParam,
+        envDecayParam,
+        envSustainParam,
+        envReleaseParam,
+        lfoRateParam,
+        vibratoParam,
+        noiseParam,
+        octaveParam,
+        tuningParam,
+        outputLevelParam,
+        polyModeParam,
+        stereoWidthParam
     };
 
     const Preset& preset = presets[index];
@@ -157,12 +224,18 @@ void AndesJXAudioProcessor::setCurrentProgram (int index)
       params[i]->setValueNotifyingHost(params[i]->convertTo0to1(preset.param[i]));
     }
 
+    loadingPreset = false;
+
     reset();
+    sendChangeMessage();
 }
 
 const juce::String AndesJXAudioProcessor::getProgramName (int index)
 {
-    return { presets[index].name };
+    if (index >= 0 && index < static_cast<int>(presets.size()))
+        return presets[index].name;
+
+    return "Custom";
 }
 
 void AndesJXAudioProcessor::changeProgramName (int /*index*/, const juce::String& /*newName*/)
@@ -359,6 +432,20 @@ void AndesJXAudioProcessor::update()
     synth.setOsc1Wave(toWave(w1));
     synth.setOsc2Wave(toWave(w2));
 
+    const int filterIndex = filterTypeParam->getIndex();
+
+    auto toFilterType = [](int idx) -> Synth::FilterType
+        {
+            switch (idx)
+            {
+            case 0: return Synth::FilterType::SVF;
+            case 1: return Synth::FilterType::Moog;
+            default: return Synth::FilterType::SVF;
+            }
+        };
+
+    synth.setFilterType(toFilterType(filterIndex));
+
     float sampleRate = float(getSampleRate())* 2.0f;
     float inverseSampleRate = 1.0f / sampleRate;
     //float decayTime = envDecayParam->get() / 100.0f * 5.0f;
@@ -498,8 +585,8 @@ void AndesJXAudioProcessor::update()
     else          synth.filterEnvRelease = std::exp(-inverseSampleRate * std::exp(5.5f - 0.075f * fr));
     */
     // Actualizar tipo de filtro
-    const int filterTypeIndex = filterTypeParam->getIndex();
-    synth.setFilterType(static_cast<Synth::FilterType>(filterTypeIndex));
+    //const int filterTypeIndex = filterTypeParam->getIndex();
+    //synth.setFilterType(static_cast<Synth::FilterType>(filterTypeIndex));
 }
 
 void AndesJXAudioProcessor::splitBufferByEvents(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
@@ -578,186 +665,456 @@ juce::AudioProcessorEditor* AndesJXAudioProcessor::createEditor()
 }
 
 //==============================================================================
-void AndesJXAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
+void AndesJXAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
 {
+    apvts.state.setProperty("currentProgram", currentProgram, nullptr);
+    apvts.state.setProperty("isCustomPreset", isCustomPreset, nullptr);
+
     copyXmlToBinary(*apvts.copyState().createXml(), destData);
 }
 
-void AndesJXAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
+void AndesJXAudioProcessor::setStateInformation(const void* data, int sizeInBytes)
 {
     std::unique_ptr<juce::XmlElement> xml(getXmlFromBinary(data, sizeInBytes));
-    if (xml.get() != nullptr && xml->hasTagName(apvts.state.getType())) {
+
+    if (xml != nullptr && xml->hasTagName(apvts.state.getType()))
+    {
+        loadingPreset = true;
         apvts.replaceState(juce::ValueTree::fromXml(*xml));
+        loadingPreset = false;
+
+        currentProgram = static_cast<int>(apvts.state.getProperty("currentProgram", 0));
+        isCustomPreset = static_cast<bool>(apvts.state.getProperty("isCustomPreset", false));
+
+        if (currentProgram >= 0 && currentProgram < static_cast<int>(presets.size()))
+            isCustomPreset = !currentStateMatchesProgram() ? true : isCustomPreset;
+
         parametersChanged.store(true);
+        sendChangeMessage();
     }
 }
 
 //==============================================================================
 void AndesJXAudioProcessor::createPrograms()
 {
-    presets.emplace_back("Init", 0.00f, -12.00f, 0.00f, 0.00f, 35.00f, 
-                                 0.00f, 100.00f, 15.00f, 50.00f, 0.00f, 
-                                 0.00f, 100.00f, 60.00f, 0.00f, 30.00f, 
-                                 0.00f, 25.00f, 0.00f, 50.00f, 100.00f, 
-                                 30.00f, 0.81f, 0.00f, 0.00f, 0.00f, 
-                                 0.00f, 0.00f, 1.00f);
-    presets.emplace_back("5th Sweep Pad", 100.00f, -7.00f, -6.30f, 1.00f, 32.00f,
-                                          0.00f, 90.00f, 60.00f, -76.00f, 0.00f, 
-                                          0.00f, 100.00f, 60.00f, 90.00f, 89.00f, 
-                                          90.00f, 73.00f, 0.00f, 50.00f, 100.00f, 
-                                          71.00f, 0.81f, 30.00f, 0.00f, 0.00f, 
-                                          0.00f, 0.00f, 1.00f);
-    presets.emplace_back("Echo Pad [SA]", 88.00f, 0.00f, 0.00f, 0.00f, 49.00f, 
-                                          0.00f, 46.00f, 76.00f, 38.00f, 10.00f, 
-                                          38.00f, 100.00f, 60.00f, 100.00f, 86.00f, 
-                                          76.00f, 57.00f, 30.00f, 80.00f, 68.00f, 
-                                          66.00f, 0.79f, -74.00f, 25.00f, 0.00f, 
-                                          0.00f, 0.00f, 1.00f);
-    presets.emplace_back("Space Chimes [SA]", 88.00f, 0.00f, 0.00f, 0.00f, 49.00f, 
-                                              0.00f, 49.00f, 82.00f, 32.00f, 8.00f, 
-                                              78.00f, 100.00f, 60.00f, 85.00f, 69.00f, 
-                                              76.00f, 47.00f, 12.00f, 22.00f, 55.00f, 
-                                              66.00f, 0.89f, -32.00f, 0.00f, 2.00f, 
-                                              0.00f, 0.00f, 1.00f);
-    presets.emplace_back("Solid Backing", 100.00f, -12.00f, -18.70f, 0.00f, 35.00f, 
-                                          0.00f, 30.00f, 25.00f, 40.00f, 0.00f, 
-                                          26.00f, 0.00f, 100.00f, 60.00f, 35.00f, 
-                                          0.00f, 25.00f, 0.00f, 50.00f, 100.00f, 
-                                          30.00f, 0.81f, 0.00f, 50.00f, 0.00f, 
-                                          0.00f, 0.00f, 1.00f);
-    presets.emplace_back("Velocity Backing [SA]", 41.00f, 0.00f, 9.70f, 0.00f, 8.00f, 
-                                                  -1.68f, 49.00f, 1.00f, -32.00f, 0.00f, 
-                                                  86.00f, 100.00f, 60.00f, 61.00f, 87.00f, 
-                                                  100.00f, 93.00f, 11.00f, 48.00f, 98.00f, 
-                                                  32.00f, 0.81f, 0.00f, 0.00f, 0.00f, 
-                                                  0.00f, 0.00f, 1.00f);
-    presets.emplace_back("Rubber Backing [ZF]", 29.00f, 12.00f, -5.60f, 0.00f, 18.00f, 
-                                                5.06f, 35.00f, 15.00f, 54.00f, 14.00f, 
-                                                8.00f, 100.00f, 60.00f, 0.00f, 42.00f, 
-                                                13.00f, 21.00f, 0.00f, 56.00f, 0.00f, 
-                                                32.00f, 0.20f, 16.00f, 22.00f, 0.00f, 
-                                                0.00f, 0.00f, 1.00f);
-    presets.emplace_back("808 State Lead", 100.00f, 7.00f, -7.10f, 2.00f, 34.00f, 
-                                           12.35f, 65.00f, 63.00f, 50.00f, 16.00f, 
-                                           0.00f, 0.00f, 100.00f, 60.00f, 30.00f, 
-                                           0.00f, 25.00f, 17.00f, 50.00f, 100.00f, 
-                                           3.00f, 0.81f, 0.00f, 0.00f, 1.00f, 
-                                           0.00f, 0.00f, 1.00f);
-    presets.emplace_back("Mono Glide", 0.00f, -12.00f, 0.00f, 2.00f, 46.00f, 
-                                       0.00f, 51.00f, 0.00f, 0.00f, 0.00f, 
-                                       -100.00f, 0.00f, 100.00f, 60.00f, 30.00f, 
-                                       0.00f, 25.00f, 37.00f, 50.00f, 100.00f, 
-                                       38.00f, 0.81f, 24.00f, 0.00f, 0.00f, 
-                                       0.00f, 0.00f, 0.00f);
-    presets.emplace_back("Detuned Techno Lead", 84.00f, 0.00f, -17.20f, 2.00f, 41.00f, 
-                                                -0.15f, 54.00f, 1.00f, 16.00f, 21.00f, 
-                                                34.00f, 100.00f, 60.00f, 0.00f, 9.00f, 
-                                                100.00f, 25.00f, 20.00f, 85.00f, 100.00f, 
-                                                30.00f, 0.83f, -82.00f, 40.00f, 0.00f, 
-                                                0.00f, 0.00f, 1.00f);
-    presets.emplace_back("Hard Lead [SA]", 71.00f, 12.00f, 0.00f, 0.00f, 24.00f, 
-                                           36.00f, 56.00f, 52.00f, 38.00f, 19.00f, 
-                                           40.00f, 100.00f, 60.00f, 100.00f, 14.00f, 
-                                           65.00f, 95.00f, 7.00f, 91.00f, 100.00f, 
-                                           15.00f, 0.84f, -34.00f, 0.00f, 0.00f, 
-                                            0.00f, 0.00f, 1.00f);
-    presets.emplace_back("Bubble", 0.00f, -12.00f, -0.20f, 0.00f, 71.00f, 
-                                   -0.00f, 23.00f, 77.00f, 60.00f, 32.00f, 
-                                   26.00f, 100.00f, 60.00f, 40.00f, 18.00f, 
-                                   66.00f, 14.00f, 0.00f, 38.00f, 65.00f, 
-                                   16.00f, 0.48f, 0.00f, 0.00f, 1.00f, 
-                                    0.00f, 0.00f, 1.00f);
-    presets.emplace_back("Monosynth", 62.00f, -12.00f, 0.00f, 1.00f, 35.00f, 
-                                      0.02f, 64.00f, 39.00f, 2.00f, 65.00f, 
-                                      -100.00f, 100.00f, 60.00f, 7.00f, 52.00f, 
-                                      24.00f, 84.00f, 13.00f, 30.00f, 76.00f, 
-                                      21.00f, 0.58f, -40.00f, 0.00f, -1.00f, 
-                                      0.00f, 0.00f, 0.00f);
-    presets.emplace_back("Moogcury Lite", 81.00f, 24.00f, -9.80f, 1.00f, 15.00f, 
-                                          -0.97f, 39.00f, 17.00f, 38.00f, 40.00f, 
-                                          24.00f, 100.00f, 60.00f, 0.00f, 47.00f, 
-                                          19.00f, 37.00f, 0.00f, 50.00f, 20.00f, 
-                                          33.00f, 0.38f, 6.00f, 0.00f, -2.00f, 
-                                          0.00f, 0.00f, 0.00f);
-    presets.emplace_back("Gangsta Whine", 0.00f, 0.00f, 0.00f, 2.00f, 44.00f, 
-                                          0.00f, 41.00f, 46.00f, 0.00f, 0.00f, 
-                                          -100.00f, 100.00f, 60.00f, 0.00f, 0.00f, 
-                                          100.00f, 25.00f, 15.00f, 50.00f, 100.00f, 
-                                          32.00f, 0.81f, -2.00f, 0.00f, 2.00f, 
-                                          0.00f, 0.00f, 0.00f);
-    presets.emplace_back("Higher Synth [ZF]", 48.00f, 0.00f, -8.80f, 0.00f, 0.00f, 
-                                              0.00f, 50.00f, 47.00f, 46.00f, 30.00f, 
-                                              60.00f, 100.00f, 60.00f, 0.00f, 10.00f, 
-                                              0.00f, 7.00f, 0.00f, 42.00f, 0.00f, 
-                                              22.00f, 0.21f, 18.00f, 16.00f, 2.00f, 
-                                              0.00f, 0.00f, 1.00f);
-    presets.emplace_back("303 Saw Bass", 0.00f, 0.00f, 0.00f, 1.00f, 49.00f, 
-                                         0.00f, 55.00f, 75.00f, 38.00f, 35.00f, 
-                                         0.00f, 100.00f, 60.00f, 0.00f, 56.00f, 
-                                         0.00f, 56.00f, 0.00f, 80.00f, 100.00f, 
-                                         24.00f, 0.26f, -2.00f, 0.00f, -2.00f, 
-                                         0.00f, 0.00f, 0.00f);
-    presets.emplace_back("303 Square Bass", 75.00f, 0.00f, 0.00f, 1.00f, 49.00f, 
-                                            0.00f, 55.00f, 75.00f, 38.00f, 35.00f, 
-                                            0.00f, 100.00f, 60.00f, 14.00f, 49.00f, 
-                                            0.00f, 39.00f, 0.00f, 80.00f, 100.00f, 
-                                            24.00f, 0.26f, -2.00f, 0.00f, -2.00f, 
-                                            0.00f, 0.00f, 0.00f);
-    presets.emplace_back("Analog Bass", 100.00f, -12.00f, -10.90f, 1.00f, 19.00f, 
-                                        0.00f, 30.00f, 51.00f, 70.00f, 9.00f, 
-                                        -100.00f, 100.00f, 60.00f, 0.00f, 88.00f, 
-                                        0.00f, 21.00f, 0.00f, 50.00f, 100.00f, 
-                                        46.00f, 0.81f, 0.00f, 0.00f, -1.00f, 
-                                        0.00f, 0.00f, 0.00f);
-    presets.emplace_back("Analog Bass 2", 100.00f, -12.00f, -10.90f, 0.00f, 19.00f, 
-                                          13.44f, 48.00f, 43.00f, 88.00f, 0.00f, 
-                                          60.00f, 100.00f, 60.00f, 0.00f, 0.00f, 
-                                          0.00f, 0.00f, 0.00f, 61.00f, 100.00f, 
-                                          32.00f, 0.81f, 0.00f, 0.00f, -1.00f, 
-                                          0.00f, 0.00f, 0.00f);
-    presets.emplace_back("Low Pulses", 97.00f, -12.00f, -3.30f, 0.00f, 35.00f, 
-                                        0.00f, 80.00f, 40.00f, 4.00f, 0.00f, 
-                                        0.00f, 100.00f, 60.00f, 0.00f, 77.00f, 
-                                        0.00f, 25.00f, 0.00f, 50.00f, 100.00f, 
-                                        30.00f, 0.81f, -68.00f, 0.00f, -2.00f, 
-                                        0.00f, 0.00f, 1.00f);
-    presets.emplace_back("Sine Infra-Bass", 0.00f, -12.00f, 0.00f, 0.00f, 35.00f, 
-                                            0.00f, 33.00f, 76.00f, 6.00f, 0.00f, 
-                                            0.00f, 100.00f, 60.00f, 0.00f, 30.00f,
-                                            0.00f, 25.00f, 0.00f, 55.00f, 25.00f, 
-                                            30.00f, 0.81f, 4.00f, 0.00f, -2.00f, 
-                                            0.00f, 0.00f, 0.00f);
-    presets.emplace_back("Wobble Bass [SA]", 100.00f, -12.00f, -8.80f, 0.00f, 82.00f, 0.21f, 72.00f, 47.00f, -32.00f, 34.00f, 64.00f, 100.00f, 60.00f, 20.00f, 69.00f, 100.00f, 15.00f, 9.00f, 50.00f, 100.00f, 7.00f, 0.81f, -8.00f, 0.00f, -1.00f, 0.00f, 0.00f, 0.00f);
-    presets.emplace_back("Squelch Bass", 100.00f, -12.00f, -8.80f, 0.00f, 35.00f, 0.00f, 67.00f, 70.00f, -48.00f, 0.00f, 0.00f, 100.00f, 60.00f, 48.00f, 69.00f, 100.00f, 15.00f, 0.00f, 50.00f, 100.00f, 7.00f, 0.81f, -8.00f, 0.00f, -1.00f, 0.00f, 0.00f, 0.00f);
-    presets.emplace_back("Rubber Bass [ZF]", 49.00f, -12.00f, 1.60f, 1.00f, 35.00f, 0.00f, 36.00f, 15.00f, 50.00f, 20.00f, 0.00f, 100.00f, 60.00f, 0.00f, 38.00f, 0.00f, 25.00f, 0.00f, 60.00f, 100.00f, 22.00f, 0.19f, 0.00f, 0.00f, -2.00f, 0.00f, 0.00f, 0.00f);
-    presets.emplace_back("Soft Pick Bass", 37.00f, 0.00f, 7.80f, 0.00f, 22.00f, 0.00f, 33.00f, 47.00f, 42.00f, 16.00f, 18.00f, 100.00f, 60.00f, 0.00f, 0.00f, 0.00f, 25.00f, 4.00f, 58.00f, 0.00f, 22.00f, 0.15f, -12.00f, 33.00f, -2.00f, 0.00f, 0.00f, 0.00f);
-    presets.emplace_back("Fretless Bass", 50.00f, 0.00f, -14.40f, 1.00f, 34.00f, 0.00f, 51.00f, 0.00f, 16.00f, 0.00f, 34.00f, 100.00f, 60.00f, 0.00f, 9.00f, 0.00f, 25.00f, 20.00f, 85.00f, 0.00f, 30.00f, 0.81f, 40.00f, 0.00f, -2.00f, 0.00f, 0.00f, 0.00f);
-    presets.emplace_back("Whistler", 23.00f, 0.00f, -0.70f, 0.00f, 35.00f, 0.00f, 33.00f, 100.00f, 0.00f, 0.00f, 0.00f, 100.00f, 60.00f, 0.00f, 29.00f, 0.00f, 25.00f, 68.00f, 39.00f, 58.00f, 36.00f, 0.81f, 28.00f, 38.00f, 2.00f, 0.00f, 0.00f, 1.00f);
-    presets.emplace_back("Very Soft Pad", 39.00f, 0.00f, -4.90f, 2.00f, 12.00f, 0.00f, 35.00f, 78.00f, 0.00f, 0.00f, 0.00f, 100.00f, 60.00f, 0.00f, 30.00f, 0.00f, 25.00f, 35.00f, 50.00f, 80.00f, 70.00f, 0.81f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 1.00f);
-    presets.emplace_back("Pizzicato", 0.00f, -12.00f, 0.00f, 0.00f, 35.00f, 0.00f, 23.00f, 20.00f, 50.00f, 0.00f, 0.00f, 100.00f, 60.00f, 0.00f, 22.00f, 0.00f, 25.00f, 0.00f, 47.00f, 0.00f, 30.00f, 0.81f, 0.00f, 80.00f, 0.00f, 0.00f, 0.00f, 1.00f);
-    presets.emplace_back("Synth Strings", 100.00f, 0.00f, -7.10f, 0.00f, 0.00f, -0.97f, 42.00f, 26.00f, 50.00f, 14.00f, 38.00f, 100.00f, 60.00f, 0.00f, 67.00f, 55.00f, 97.00f, 82.00f, 70.00f, 100.00f, 42.00f, 0.84f, 34.00f, 30.00f, 0.00f, 0.00f, 0.00f, 1.00f);
-    presets.emplace_back("Synth Strings 2", 75.00f, 0.00f, -3.80f, 0.00f, 49.00f, 0.00f, 55.00f, 16.00f, 38.00f, 8.00f, -60.00f, 100.00f, 60.00f, 76.00f, 29.00f, 76.00f, 100.00f, 46.00f, 80.00f, 100.00f, 39.00f, 0.79f, -46.00f, 0.00f, 1.00f, 0.00f, 0.00f, 1.00f);
-    presets.emplace_back("Leslie Organ", 0.00f, 0.00f, 0.00f, 0.00f, 13.00f, -0.38f, 38.00f, 74.00f, 8.00f, 20.00f, -100.00f, 100.00f, 60.00f, 0.00f, 55.00f, 52.00f, 31.00f, 0.00f, 17.00f, 73.00f, 28.00f, 0.87f, -52.00f, 0.00f, -1.00f, 0.00f, 0.00f, 1.00f);
-    presets.emplace_back("Click Organ", 50.00f, 12.00f, 0.00f, 0.00f, 35.00f, 0.00f, 44.00f, 50.00f, 30.00f, 16.00f, -100.00f, 100.00f, 60.00f, 0.00f, 0.00f, 18.00f, 0.00f, 0.00f, 75.00f, 80.00f, 0.00f, 0.81f, -2.00f, 0.00f, 0.00f, 0.00f, 0.00f, 1.00f);
-    presets.emplace_back("Hard Organ", 89.00f, 19.00f, -0.90f, 0.00f, 35.00f, 0.00f, 51.00f, 62.00f, 8.00f, 0.00f, -100.00f, 100.00f, 60.00f, 0.00f, 37.00f, 0.00f, 100.00f, 4.00f, 8.00f, 72.00f, 4.00f, 0.77f, -2.00f, 0.00f, 0.00f, 0.00f, 0.00f, 1.00f);
-    presets.emplace_back("Bass Clarinet", 100.00f, 0.00f, 0.00f, 1.00f, 0.00f, 0.00f, 51.00f, 10.00f, 0.00f, 11.00f, 0.00f, 100.00f, 60.00f, 0.00f, 0.00f, 0.00f, 25.00f, 35.00f, 65.00f, 65.00f, 32.00f, 0.79f, -2.00f, 20.00f, -1.00f, 0.00f, 0.00f, 1.00f);
-    presets.emplace_back("Trumpet", 0.00f, 0.00f, 0.00f, 1.00f, 6.00f, 0.00f, 57.00f, 0.00f, -36.00f, 15.00f, 0.00f, 100.00f, 60.00f, 21.00f, 15.00f, 0.00f, 25.00f, 24.00f, 60.00f, 80.00f, 10.00f, 0.75f, 10.00f, 25.00f, 1.00f, 0.00f, 0.00f, 0.00f);
-    presets.emplace_back("Soft Horn", 12.00f, 19.00f, 1.90f, 0.00f, 35.00f, 0.00f, 50.00f, 21.00f, -42.00f, 12.00f, 20.00f, 100.00f, 60.00f, 0.00f, 35.00f, 36.00f, 25.00f, 8.00f, 50.00f, 100.00f, 27.00f, 0.83f, 2.00f, 10.00f, -1.00f, 0.00f, 0.00f, 1.00f);
-    presets.emplace_back("Brass Section", 43.00f, 12.00f, -7.90f, 0.00f, 28.00f, -0.79f, 50.00f, 0.00f, 18.00f, 0.00f, 0.00f, 100.00f, 60.00f, 24.00f, 16.00f, 91.00f, 8.00f, 17.00f, 50.00f, 80.00f, 45.00f, 0.81f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 1.00f);
-    presets.emplace_back("Synth Brass", 40.00f, 0.00f, -6.30f, 0.00f, 30.00f, -3.07f, 39.00f, 15.00f, 50.00f, 0.00f, 0.00f, 100.00f, 60.00f, 39.00f, 30.00f, 82.00f, 25.00f, 33.00f, 74.00f, 76.00f, 41.00f, 0.81f, -6.00f, 23.00f, 0.00f, 0.00f, 0.00f, 1.00f);
-    presets.emplace_back("Detuned Syn Brass [ZF]", 68.00f, 0.00f, 31.80f, 0.00f, 31.00f, 0.50f, 26.00f, 7.00f, 70.00f, 0.00f, 32.00f, 100.00f, 60.00f, 0.00f, 83.00f, 0.00f, 5.00f, 0.00f, 75.00f, 54.00f, 32.00f, 0.76f, -26.00f, 29.00f, 0.00f, 0.00f, 0.00f, 1.00f);
-    presets.emplace_back("Power PWM", 100.00f, -12.00f, -8.80f, 0.00f, 35.00f, 0.00f, 82.00f, 13.00f, 50.00f, 0.00f, -100.00f, 100.00f, 60.00f, 24.00f, 30.00f, 88.00f, 34.00f, 0.00f, 50.00f, 100.00f, 48.00f, 0.71f, -26.00f, 0.00f, -1.00f, 0.00f, 0.00f, 1.00f);
-    presets.emplace_back("Water Velocity [SA]", 76.00f, 0.00f, -1.40f, 0.00f, 49.00f, 0.00f, 87.00f, 67.00f, 100.00f, 32.00f, -82.00f, 100.00f, 60.00f, 95.00f, 56.00f, 72.00f, 100.00f, 4.00f, 76.00f, 11.00f, 46.00f, 0.88f, 44.00f, 0.00f, -1.00f, 0.00f, 0.00f, 1.00f);
-    presets.emplace_back("Ghost [SA]", 75.00f, 0.00f, -7.10f, 2.00f, 16.00f, -0.00f, 38.00f, 58.00f, 50.00f, 16.00f, 62.00f, 100.00f, 60.00f, 0.00f, 30.00f, 40.00f, 31.00f, 37.00f, 50.00f, 100.00f, 54.00f, 0.85f, 66.00f, 43.00f, 0.00f, 0.00f, 0.00f, 1.00f);
-    presets.emplace_back("Soft E.Piano", 31.00f, 0.00f, -0.20f, 0.00f, 35.00f, 0.00f, 34.00f, 26.00f, 6.00f, 0.00f, 26.00f, 100.00f, 60.00f, 0.00f, 22.00f, 0.00f, 39.00f, 0.00f, 80.00f, 0.00f, 44.00f, 0.81f, 2.00f, 0.00f, 0.00f, 0.00f, 0.00f, 1.00f);
-    presets.emplace_back("Thumb Piano", 72.00f, 15.00f, 50.00f, 0.00f, 35.00f, 0.00f, 37.00f, 47.00f, 8.00f, 0.00f, 0.00f, 100.00f, 60.00f, 0.00f, 45.00f, 0.00f, 39.00f, 0.00f, 39.00f, 0.00f, 48.00f, 0.81f, 20.00f, 0.00f, 1.00f, 0.00f, 0.00f, 1.00f);
-    presets.emplace_back("Steel Drums [ZF]", 81.00f, 12.00f, -12.00f, 0.00f, 18.00f, 2.30f, 40.00f, 30.00f, 8.00f, 17.00f, -20.00f, 100.00f, 60.00f, 0.00f, 42.00f, 23.00f, 47.00f, 12.00f, 48.00f, 0.00f, 49.00f, 0.53f, -28.00f, 34.00f, 0.00f, 0.00f, 0.00f, 1.00f);
-    presets.emplace_back("Car Horn", 57.00f, -1.00f, -2.80f, 0.00f, 35.00f, 0.00f, 46.00f, 0.00f, 36.00f, 0.00f, 0.00f, 100.00f, 60.00f, 46.00f, 30.00f, 100.00f, 23.00f, 30.00f, 50.00f, 100.00f, 31.00f, 1.00f, -24.00f, 0.00f, 0.00f, 0.00f, 0.00f, 1.00f);
-    presets.emplace_back("Helicopter", 0.00f, -12.00f, 0.00f, 0.00f, 35.00f, 0.00f, 8.00f, 36.00f, 38.00f, 100.00f, 0.00f, 100.00f, 60.00f, 100.00f, 100.00f, 0.00f, 100.00f, 96.00f, 50.00f, 100.00f, 92.00f, 0.97f, 0.00f, 100.00f, -2.00f, 0.00f, 0.00f, 1.00f);
-    presets.emplace_back("Arctic Wind", 0.00f, -12.00f, 0.00f, 0.00f, 35.00f, 0.00f, 16.00f, 85.00f, 0.00f, 28.00f, 0.00f, 100.00f, 60.00f, 37.00f, 30.00f, 0.00f, 25.00f, 89.00f, 50.00f, 100.00f, 89.00f, 0.24f, 0.00f, 100.00f, 2.00f, 0.00f, 0.00f, 1.00f);
-    presets.emplace_back("Thip", 100.00f, -7.00f, 0.00f, 0.00f, 35.00f, 0.00f, 0.00f, 100.00f, 94.00f, 0.00f, 0.00f, 100.00f, 60.00f, 2.00f, 20.00f, 0.00f, 20.00f, 0.00f, 46.00f, 0.00f, 30.00f, 0.81f, 0.00f, 78.00f, 0.00f, 0.00f, 0.00f, 1.00f);
-    presets.emplace_back("Synth Tom", 0.00f, -12.00f, 0.00f, 0.00f, 76.00f, 24.53f, 30.00f, 33.00f, 52.00f, 0.00f, 36.00f, 100.00f, 60.00f, 0.00f, 59.00f, 0.00f, 59.00f, 10.00f, 50.00f, 0.00f, 50.00f, 0.81f, 0.00f, 70.00f, -2.00f, 0.00f, 0.00f, 1.00f);
-    presets.emplace_back("Squelchy Frog", 50.00f, -5.00f, -7.90f, 2.00f, 77.00f, -36.00f, 40.00f, 65.00f, 90.00f, 0.00f, 0.00f, 100.00f, 60.00f, 33.00f, 50.00f, 0.00f, 25.00f, 0.00f, 70.00f, 65.00f, 18.00f, 0.32f, 100.00f, 0.00f, -2.00f, 0.00f, 0.00f, 1.00f);
+    presets.emplace_back("Init",
+        1.00f, 1.00f, 0.00f, -12.00f, 0.00f, 0.00f, 35.00f,
+        0.00f, 1.00f, 100.00f, 15.00f, 50.00f, 0.00f,
+        0.00f, 100.00f, 60.00f, 0.00f, 30.00f,
+        0.00f, 25.00f, 0.00f, 50.00f, 100.00f,
+        30.00f, 0.81f, 0.00f, 0.00f, 0.00f,
+        0.00f, -3.00f, 1.00f, 0.00f);
+
+    presets.emplace_back("5th Sweep Pad", 
+        1.00f, 2.00f, 40.00f, -7.00f, -6.30f, 1.00f, 32.00f,
+        0.00f, 0.00f, 75.00f, 25.00f, 35.00f, 10.00f,
+        0.00f, 100.00f, 60.00f, 90.00f, 80.00f,
+        80.00f, 80.00f, 90.00f, 80.00f, 80.00f,
+        80.00f, 0.30f, 5.00f, 0.00f, 0.00f,
+        0.00f, -4.00f, 1.00f, 95.00f);
+
+    presets.emplace_back("Echo Pad [SA]", 
+        1.00f, 3.00f, 55.00f, 0.00f, 0.00f, 0.00f, 49.00f,
+        0.00f, 0.00f, 55.00f, 28.00f, 30.00f, 8.00f,
+        10.00f, 100.00f, 60.00f, 100.00f, 86.00f,
+        76.00f, 70.00f, 30.00f, 80.00f, 68.00f,
+        80.00f, 0.35f, 5.00f, 25.00f, 0.00f,
+        0.00f, 0.00f, 1.00f, 90.00f);
+
+    presets.emplace_back("Space Chimes [SA]", 
+        0.00f, 3.00f, 45.00f, 0.00f, 0.00f, 0.00f, 49.00f,
+        0.00f, 0.00f, 58.00f, 35.00f, 22.00f, 6.00f,
+        15.00f, 100.00f, 60.00f, 70.00f, 55.00f,
+        65.00f, 50.00f, 8.00f, 18.00f, 35.00f,
+        72.00f, 0.42f, 0.00f, 0.00f, 2.00f,
+        0.00f, 0.00f, 1.00f, 85.00f);
+
+    presets.emplace_back("Solid Backing", 
+        1.00f, 1.00f, 50.00f, -12.00f, -18.70f, 0.00f, 35.00f,
+        0.00f, 1.00f, 35.00f, 20.00f, 28.00f, 0.00f,
+        10.00f, 0.00f, 60.00f, 55.00f, 35.00f,
+        10.00f, 35.00f, 0.00f, 50.00f, 100.00f,
+        40.00f, 0.25f, 0.00f, 50.00f, 0.00f,
+        0.00f, 0.00f, 1.00f, 65.00f);
+
+presets.emplace_back("Velocity Backing [SA]", 
+    1.00f, 3.00f, 41.00f, 0.00f, 9.70f, 0.00f, 8.00f,
+    0.00f, 0.00f, 49.00f, 12.00f, -20.00f, 0.00f,
+    40.00f, 100.00f, 60.00f, 61.00f, 87.00f,
+    100.00f, 93.00f, 11.00f, 48.00f, 98.00f,
+    45.00f, 0.31f, 0.00f, 0.00f, 0.00f,
+    0.00f, 0.00f, 1.00f, 80.00f);
+
+presets.emplace_back("Rubber Backing [ZF]", 
+    2.00f, 3.00f, 29.00f, 12.00f, -5.60f, 0.00f, 18.00f,
+    0.00f, 1.00f, 35.00f, 18.00f, 45.00f, 8.00f,
+    8.00f, 70.00f, 60.00f, 0.00f, 42.00f,
+    18.00f, 28.00f, 0.00f, 56.00f, 20.00f,
+    40.00f, 0.20f, 4.00f, 0.00f, 0.00f,
+    0.00f, 0.00f, 1.00f, 55.00f);
+
+presets.emplace_back("808 State Lead", 
+    1.00f, 2.00f, 65.00f, 7.00f, -7.10f, 2.00f, 34.00f,
+    0.00f, 1.00f, 65.00f, 58.00f, 45.00f, 12.00f,
+    0.00f, 0.00f, 60.00f, 60.00f, 30.00f,
+    0.00f, 25.00f, 17.00f, 50.00f, 100.00f,
+    12.00f, 0.55f, 0.00f, 0.00f, 1.00f,
+    0.00f, 0.00f, 1.00f, 20.00f);
+
+presets.emplace_back("Mono Glide", 
+    1.00f, 1.00f, 0.00f, -12.00f, 0.00f, 2.00f, 46.00f,
+    0.00f, 0.00f, 51.00f, 0.00f, 0.00f, 0.00f,
+    -100.00f, 0.00f, 60.00f, 60.00f, 30.00f,
+    0.00f, 25.00f, 12.00f, 40.00f, 100.00f,
+    20.00f, 0.31f, 0.00f, 0.00f, 0.00f,
+    0.00f, 0.00f, 0.00f, 0.00f);
+
+presets.emplace_back("Detuned Techno Lead", 
+    1.00f, 1.00f, 60.00f, 0.00f, -17.20f, 2.00f, 41.00f,
+    0.00f, 1.00f, 54.00f, 24.00f, 18.00f, 8.00f,
+    12.00f, 60.00f, 60.00f, 0.00f, 9.00f,
+    100.00f, 25.00f, 10.00f, 60.00f, 100.00f,
+    18.00f, 0.45f, -12.00f, 0.00f, 0.00f,
+    0.00f, 0.00f, 1.00f, 25.00f);
+presets.emplace_back("Hard Lead [SA]", 
+    1.00f, 4.00f, 71.00f, 12.00f, 0.00f, 0.00f, 24.00f,
+    0.00f, 1.00f, 60.00f, 42.00f, 30.00f, 6.00f,
+    12.00f, 60.00f, 60.00f, 15.00f, 18.00f,
+    55.00f, 20.00f, 7.00f, 60.00f, 100.00f,
+    12.00f, 0.40f, -8.00f, 0.00f, 0.00f,
+    0.00f, 0.00f, 1.00f, 18.00f);
+
+presets.emplace_back("Bubble", 
+    0.00f, 3.00f, 25.00f, -12.00f, 0.00f, 0.00f, 71.00f,
+    0.00f, 0.00f, 28.00f, 52.00f, 38.00f, 12.00f,
+    12.00f, 60.00f, 60.00f, 20.00f, 24.00f,
+    28.00f, 18.00f, 0.00f, 30.00f, 35.00f,
+    22.00f, 0.30f, 0.00f, 0.00f, 0.00f,
+    0.00f, -3.00f, 1.00f, 45.00f);
+
+presets.emplace_back("Monosynth", 
+    1.00f, 2.00f, 62.00f, -12.00f, 0.00f, 1.00f, 35.00f,
+    0.00f, 1.00f, 64.00f, 39.00f, 18.00f, 8.00f,
+    -100.00f, 60.00f, 60.00f, 7.00f, 52.00f,
+    24.00f, 40.00f, 13.00f, 30.00f, 76.00f,
+    21.00f, 0.35f, -8.00f, 0.00f, -1.00f,
+    0.00f, 0.00f, 0.00f, 5.00f);
+
+presets.emplace_back("Moogcury Lite", 
+    1.00f, 3.00f, 62.00f, 12.00f, -9.80f, 1.00f, 15.00f,
+    0.00f, 1.00f, 39.00f, 17.00f, 32.00f, 8.00f,
+    12.00f, 60.00f, 60.00f, 0.00f, 47.00f,
+    19.00f, 37.00f, 0.00f, 50.00f, 20.00f,
+    33.00f, 0.38f, 3.00f, 3.00f, -2.00f,
+    0.00f, 0.00f, 0.00f, 12.00f);
+
+presets.emplace_back("Gangsta Whine", 
+    2.00f, 3.00f, 20.00f, 0.00f, 0.00f, 2.00f, 44.00f,
+    0.00f, 0.00f, 41.00f, 42.00f, 0.00f, 0.00f,
+    -100.00f, 60.00f, 60.00f, 0.00f, 0.00f,
+    100.00f, 25.00f, 8.00f, 40.00f, 100.00f,
+    22.00f, 0.35f, 0.00f, 2.00f, 0.00f,
+    0.00f, -3.00f, 0.00f, 18.00f);
+
+presets.emplace_back("Higher Synth [ZF]", 
+    2.00f, 1.00f, 48.00f, 0.00f, -8.80f, 0.00f, 0.00f,
+    0.00f, 0.00f, 58.00f, 30.00f, 32.00f, 8.00f,
+    18.00f, 60.00f, 60.00f, 0.00f, 16.00f,
+    0.00f, 10.00f, 0.00f, 32.00f, 0.00f,
+    18.00f, 0.18f, 3.00f, 2.00f, 0.00f,
+    0.00f, 0.00f, 1.00f, 28.00f);
+
+// Basses
+presets.emplace_back("303 Saw Bass", 
+    1.00f, 1.00f, 0.00f, 0.00f, 0.00f, 1.00f, 49.00f,
+    1.00f, 1.00f, 55.00f, 75.00f, 38.00f, 0.00f,
+    0.00f, 45.00f, 60.00f, 0.00f, 48.00f,
+    0.00f, 18.00f, 0.00f, 38.00f, 70.00f,
+    18.00f, 0.26f, 0.00f, 0.00f, -2.00f,
+    0.00f, 0.00f, 0.00f, 5.00f);
+
+presets.emplace_back("303 Square Bass", 
+    2.00f, 2.00f, 75.00f, 0.00f, 0.00f, 1.00f, 49.00f,
+    1.00f, 1.00f, 55.00f, 75.00f, 38.00f, 0.00f,
+    0.00f, 45.00f, 60.00f, 8.00f, 45.00f,
+    0.00f, 18.00f, 0.00f, 35.00f, 70.00f,
+    18.00f, 0.26f, 0.00f, 0.00f, -2.00f,
+    0.00f, 0.00f, 0.00f, 5.00f);
+
+presets.emplace_back("Analog Bass", 
+    1.00f, 2.00f, 45.00f, -12.00f, -10.90f, 1.00f, 19.00f,
+    1.00f, 1.00f, 32.00f, 42.00f, 38.00f, 0.00f,
+    -100.00f, 50.00f, 60.00f, 0.00f, 42.00f,
+    0.00f, 18.00f, 0.00f, 35.00f, 70.00f,
+    20.00f, 0.20f, 0.00f, 0.00f, 0.00f,
+    0.00f, 0.00f, 0.00f, 8.00f);
+
+presets.emplace_back("Analog Bass 2", 
+    1.00f, 3.00f, 45.00f, -12.00f, -10.90f, 0.00f, 19.00f,
+    1.00f, 1.00f, 36.00f, 38.00f, 42.00f, 0.00f,
+    20.00f, 50.00f, 60.00f, 0.00f, 28.00f,
+    0.00f, 15.00f, 0.00f, 40.00f, 70.00f,
+    20.00f, 0.21f, 0.00f, 0.00f, -1.00f,
+    0.00f, 0.00f, 0.00f, 8.00f);
+
+presets.emplace_back("Low Pulses", 
+    1.00f, 4.00f, 70.00f, -12.00f, -3.30f, 0.00f, 35.00f,
+    0.00f, 1.00f, 55.00f, 28.00f, 12.00f, 0.00f,
+    0.00f, 45.00f, 60.00f, 0.00f, 45.00f,
+    0.00f, 18.00f, 0.00f, 35.00f, 70.00f,
+    18.00f, 0.18f, 0.00f, 0.00f, 0.00f,
+    0.00f, 0.00f, 1.00f, 10.00f);
+
+presets.emplace_back("Sine Infra-Bass", 
+    0.00f, 3.00f, 0.00f, -12.00f, 0.00f, 0.00f, 35.00f,
+    0.00f, 0.00f, 26.00f, 42.00f, 8.00f, 0.00f,
+    0.00f, 40.00f, 60.00f, 0.00f, 22.00f,
+    0.00f, 12.00f, 0.00f, 30.00f, 25.00f,
+    12.00f, 0.12f, 0.00f, 0.00f, 0.00f,
+    0.00f, 0.00f, 0.00f, 0.00f);
+
+presets.emplace_back("Wobble Bass [SA]", 
+    1.00f, 4.00f, 55.00f, -12.00f, -8.80f, 0.00f, 82.00f,
+    1.00f, 1.00f, 72.00f, 42.00f, -24.00f, 22.00f,
+    20.00f, 45.00f, 60.00f, 10.00f, 48.00f,
+    20.00f, 18.00f, 0.00f, 38.00f, 80.00f,
+    20.00f, 0.45f, 0.00f, 0.00f, 0.00f,
+    0.00f, 0.00f, 0.00f, 10.00f);
+
+presets.emplace_back("Squelch Bass", 
+    1.00f, 2.00f, 55.00f, -12.00f, -8.80f, 0.00f, 35.00f,
+    1.00f, 1.00f, 67.00f, 68.00f, -36.00f, 0.00f,
+    0.00f, 45.00f, 60.00f, 18.00f, 48.00f,
+    0.00f, 18.00f, 0.00f, 35.00f, 75.00f,
+    18.00f, 0.20f, 0.00f, 0.00f, 0.00f,
+    0.00f, 0.00f, 0.00f, 8.00f);
+
+presets.emplace_back("Rubber Bass [ZF]", 
+    2.00f, 3.00f, 49.00f, -12.00f, 1.60f, 1.00f, 35.00f,
+    1.00f, 1.00f, 36.00f, 15.00f, 42.00f, 8.00f,
+    0.00f, 45.00f, 60.00f, 0.00f, 32.00f,
+    0.00f, 18.00f, 0.00f, 42.00f, 80.00f,
+    20.00f, 0.19f, 0.00f, 0.00f, 0.00f,
+    0.00f, 0.00f, 0.00f, 10.00f);
+
+presets.emplace_back("Soft Pick Bass", 
+    3.00f, 2.00f, 37.00f, 0.00f, 7.80f, 0.00f, 22.00f,
+    0.00f, 0.00f, 36.00f, 40.00f, 32.00f, 8.00f,
+    10.00f, 45.00f, 60.00f, 0.00f, 20.00f,
+    0.00f, 18.00f, 4.00f, 40.00f, 0.00f,
+    18.00f, 0.15f, 0.00f, 0.00f, 0.00f,
+    0.00f, 0.00f, 0.00f, 10.00f);
+
+presets.emplace_back("Fretless Bass", 
+    3.00f, 1.00f, 50.00f, 0.00f, -14.40f, 1.00f, 34.00f,
+    0.00f, 0.00f, 48.00f, 0.00f, 12.00f, 0.00f,
+    20.00f, 45.00f, 60.00f, 0.00f, 12.00f,
+    0.00f, 18.00f, 15.00f, 65.00f, 0.00f,
+    18.00f, 0.25f, 0.00f, 0.00f, 0.00f,
+    0.00f, 0.00f, 0.00f, 12.00f);
+
+presets.emplace_back("Whistler", 
+    0.00f, 3.00f, 23.00f, 0.00f, -0.70f, 0.00f, 35.00f,
+    0.00f, 0.00f, 38.00f, 80.00f, 0.00f, 0.00f,
+    0.00f, 45.00f, 60.00f, 0.00f, 22.00f,
+    0.00f, 18.00f, 55.00f, 30.00f, 45.00f,
+    22.00f, 0.40f, 10.00f, 0.00f, 0.00f,
+    0.00f, 0.00f, 1.00f, 28.00f);
+
+presets.emplace_back("Very Soft Pad", 
+    3.00f, 3.00f, 39.00f, 0.00f, -4.90f, 2.00f, 12.00f,
+    0.00f, 0.00f, 42.00f, 60.00f, 0.00f, 0.00f,
+    0.00f, 60.00f, 60.00f, 20.00f, 35.00f,
+    0.00f, 30.00f, 40.00f, 65.00f, 70.00f,
+    35.00f, 0.25f, 0.00f, 0.00f, 0.00f,
+    0.00f, 0.00f, 1.00f, 70.00f);
+
+presets.emplace_back("Pizzicato", 
+    2.00f, 3.00f, 0.00f, -12.00f, 0.00f, 0.00f, 35.00f,
+    0.00f, 0.00f, 28.00f, 20.00f, 35.00f, 0.00f,
+    0.00f, 45.00f, 60.00f, 0.00f, 18.00f,
+    0.00f, 15.00f, 0.00f, 30.00f, 0.00f,
+    15.00f, 0.15f, 0.00f, 0.00f, 0.00f,
+    0.00f, -3.00f, 1.00f, 15.00f);
+
+presets.emplace_back("Synth Strings", 
+    1.00f, 2.00f, 60.00f, 0.00f, -7.10f, 0.00f, 0.00f,
+    0.00f, 0.00f, 48.00f, 20.00f, 35.00f, 8.00f, 18.00f,
+    60.00f, 60.00f, 20.00f, 55.00f, 45.00f, 70.00f,
+    65.00f, 60.00f, 100.00f, 35.00f, 0.30f, 10.00f,
+    10.00f, 0.00f, 0.00f, 0.00f, 1.00f, 70.00f);
+
+presets.emplace_back("Synth Strings 2", 
+    1.00f, 3.00f, 65.00f, 0.00f, -3.80f, 0.00f, 49.00f,
+    0.00f, 0.00f, 52.00f, 18.00f, 30.00f, 6.00f, -30.00f,
+    60.00f, 60.00f, 40.00f, 30.00f, 55.00f, 70.00f,
+    45.00f, 65.00f, 100.00f, 32.00f, 0.28f, -10.00f,
+    0.00f, 0.00f, 0.00f, 0.00f, 1.00f, 65.00f);
+
+presets.emplace_back("Leslie Organ", 
+    2.00f, 2.00f, 0.00f, 0.00f, 0.00f, 0.00f, 13.00f,
+    0.00f, 0.00f, 40.00f, 55.00f, 6.00f, 10.00f, -100.00f,
+    60.00f, 60.00f, 0.00f, 40.00f, 40.00f, 30.00f,
+    0.00f, 15.00f, 70.00f, 22.00f, 0.60f, -20.00f,
+    0.00f, 0.00f, 0.00f, -4.00f, 1.00f, 30.00f);
+
+presets.emplace_back("Click Organ", 
+    2.00f, 1.00f, 50.00f, 12.00f, 0.00f, 0.00f, 35.00f,
+    0.00f, 0.00f, 42.00f, 40.00f, 20.00f, 8.00f, -100.00f,
+    60.00f, 60.00f, 0.00f, 0.00f, 12.00f, 0.00f,
+    0.00f, 60.00f, 70.00f, 0.00f, 0.25f, 0.00f,
+    0.00f, 0.00f, 0.00f, -3.00f, 1.00f, 20.00f);
+
+presets.emplace_back("Hard Organ", 
+    1.00f, 2.00f, 70.00f, 19.00f, -0.90f, 0.00f, 35.00f,
+    0.00f, 0.00f, 50.00f, 50.00f, 6.00f, 0.00f, -100.00f,
+    60.00f, 60.00f, 0.00f, 25.00f, 0.00f, 80.00f,
+    4.00f, 6.00f, 60.00f, 4.00f, 0.30f, 0.00f,
+    0.00f, 0.00f, 0.00f, -2.70f, 1.00f, 18.00f);
+
+presets.emplace_back("Bass Clarinet", 
+    2.00f, 3.00f, 65.00f, 0.00f, 0.00f, 1.00f, 0.00f,
+    0.00f, 0.00f, 48.00f, 12.00f, 0.00f, 6.00f, 
+    0.00f,60.00f, 60.00f, 0.00f, 0.00f, 
+    0.00f, 18.00f,30.00f, 50.00f, 55.00f, 
+    28.00f, 0.30f, 0.00f, 8.00f, 0.00f, 
+    0.00f, -1.00f, 1.00f, 12.00f);
+
+presets.emplace_back("Trumpet",
+    2.00f, 1.00f, 30.00f, 0.00f, 0.00f, 1.00f, 6.00f,
+    0.00f, 0.00f, 58.00f, 6.00f, -22.00f, 4.00f,
+    0.00f, 60.00f, 60.00f, 8.00f, 12.00f,
+    0.00f, 16.00f, 18.00f, 45.00f, 65.00f,
+    10.00f, 0.20f, 0.00f, 0.00f, 0.00f,
+    0.00f, 0.00f, 0.00f, 40.00f);
+
+presets.emplace_back("Soft Horn",
+    3.00f, 2.00f, 25.00f, 12.00f, 1.90f, 0.00f, 35.00f,
+    0.00f, 0.00f, 46.00f, 16.00f, -24.00f, 4.00f,
+    8.00f, 60.00f, 60.00f, 4.00f, 26.00f,
+    28.00f, 16.00f, 8.00f, 38.00f, 80.00f,
+    20.00f, 0.18f, 0.00f, 0.00f, 0.00f,
+    0.00f, 0.00f, 1.00f, 45.00f);
+
+presets.emplace_back("Brass Section",
+    1.00f, 2.00f, 45.00f, 12.00f, -7.90f, 0.00f, 28.00f,
+    0.00f, 1.00f, 52.00f, 8.00f, 18.00f, 0.00f,
+    0.00f, 60.00f, 60.00f, 16.00f, 14.00f,
+    65.00f, 10.00f, 12.00f, 46.00f, 70.00f,
+    26.00f, 0.18f, 0.00f, 0.00f, 0.00f,
+    0.00f, 0.00f, 1.00f, 55.00f);
+
+presets.emplace_back("Synth Brass",
+    1.00f, 2.00f, 40.00f, 0.00f, -6.30f, 0.00f, 30.00f,
+    0.00f, 1.00f, 46.00f, 12.00f, 34.00f, 0.00f,
+    0.00f, 60.00f, 60.00f, 24.00f, 20.00f,
+    56.00f, 18.00f, 22.00f, 56.00f, 68.00f,
+    24.00f, 0.18f, 0.00f, 0.00f, 0.00f,
+    0.00f, 0.00f, 1.00f, 50.00f);
+
+presets.emplace_back("Detuned Syn Brass [ZF]",
+    1.00f, 1.00f, 55.00f, 0.00f, 12.00f, 0.00f, 31.00f,
+    0.00f, 1.00f, 34.00f, 10.00f, 42.00f, 0.00f,
+    12.00f, 60.00f, 60.00f, 0.00f, 42.00f,
+    0.00f, 10.00f, 0.00f, 52.00f, 60.00f,
+    24.00f, 0.20f, 0.00f, 0.00f, 0.00f,
+    0.00f, 0.00f, 1.00f, 55.00f);
+
+presets.emplace_back("Power PWM",
+    1.00f, 4.00f, 55.00f, -12.00f, -8.80f, 0.00f, 35.00f,
+    0.00f, 1.00f, 68.00f, 18.00f, 38.00f, 0.00f,
+    -100.00f, 60.00f, 60.00f, 18.00f, 22.00f,
+    62.00f, 18.00f, 0.00f, 46.00f, 68.00f,
+    26.00f, 0.28f, -8.00f, 0.00f, 0.00f,
+    0.00f, 0.00f, 1.00f, 45.00f);
+
+presets.emplace_back("Water Velocity [SA]",
+    1.00f, 3.00f, 60.00f, 0.00f, -1.40f, 0.00f, 49.00f,
+    0.00f, 0.00f, 72.00f, 36.00f, 55.00f, 14.00f,
+    -35.00f, 60.00f, 60.00f, 42.00f, 40.00f,
+    48.00f, 62.00f, 6.00f, 50.00f, 18.00f,
+    24.00f, 0.24f, 4.00f, 0.00f, 0.00f,
+    0.00f, 0.00f, 1.00f, 75.00f);
+
+presets.emplace_back("Ghost [SA]",
+    3.00f, 1.00f, 55.00f, 0.00f, -7.10f, 2.00f, 16.00f,
+    0.00f, 0.00f, 38.00f, 32.00f, 30.00f, 4.00f,
+    18.00f, 60.00f, 60.00f, 0.00f, 22.00f,
+    24.00f, 20.00f, 18.00f, 42.00f, 75.00f,
+    26.00f, 0.20f, 6.00f, 0.00f, 0.00f,
+    0.00f, 0.00f, 1.00f, 65.00f);
+
+presets.emplace_back("Soft E.Piano",
+    3.00f, 2.00f, 35.00f, 0.00f, -0.20f, 0.00f, 35.00f,
+    0.00f, 0.00f, 36.00f, 18.00f, 6.00f, 0.00f,
+    12.00f, 60.00f, 60.00f, 0.00f, 16.00f,
+    0.00f, 26.00f, 0.00f, 48.00f, 0.00f,
+    20.00f, 0.15f, 0.00f, 0.00f, 0.00f,
+    0.00f, 0.00f, 1.00f, 35.00f);
+
+presets.emplace_back("Thumb Piano",
+    3.00f, 0.00f, 40.00f, 12.00f, 8.00f, 0.00f, 35.00f,
+    0.00f, 0.00f, 38.00f, 26.00f, 6.00f, 0.00f,
+    0.00f, 60.00f, 60.00f, 0.00f, 24.00f,
+    0.00f, 22.00f, 0.00f, 22.00f, 0.00f,
+    18.00f, 0.15f, 0.00f, 0.00f, 0.00f,
+    0.00f, 0.00f, 1.00f, 35.00f);
+
+presets.emplace_back("Steel Drums [ZF]",
+    0.00f, 3.00f, 55.00f, 12.00f, -8.00f, 0.00f, 18.00f,
+    0.00f, 0.00f, 42.00f, 24.00f, 6.00f, 6.00f,
+    -8.00f, 60.00f, 60.00f, 0.00f, 24.00f,
+    16.00f, 28.00f, 8.00f, 32.00f, 0.00f,
+    22.00f, 0.18f, 0.00f, 0.00f, 0.00f,
+    0.00f, 0.00f, 1.00f, 40.00f);
+
+presets.emplace_back("Car Horn",
+    2.00f, 1.00f, 55.00f, -1.00f, -2.80f, 0.00f, 35.00f,
+    0.00f, 0.00f, 46.00f, 0.00f, 24.00f, 0.00f,
+    0.00f, 60.00f, 60.00f, 26.00f, 20.00f,
+    65.00f, 16.00f, 18.00f, 46.00f, 75.00f,
+    18.00f, 0.18f, 0.00f, 0.00f, 0.00f,
+    0.00f, 0.00f, 1.00f, 20.00f);
+
+presets.emplace_back("Helicopter",
+    1.00f, 4.00f, 25.00f, -12.00f, 0.00f, 0.00f, 35.00f,
+    0.00f, 0.00f, 14.00f, 22.00f, 24.00f, 65.00f,
+    0.00f, 60.00f, 60.00f, 55.00f, 55.00f,
+    0.00f, 70.00f, 60.00f, 45.00f, 70.00f,
+    55.00f, 0.45f, 0.00f, 24.00f, 0.00f,
+    0.00f, 0.00f, 1.00f, 70.00f);
+
+presets.emplace_back("Arctic Wind",
+    3.00f, 1.00f, 25.00f, -12.00f, 0.00f, 0.00f, 35.00f,
+    0.00f, 0.00f, 22.00f, 55.00f, 0.00f, 10.00f,
+    0.00f, 60.00f, 60.00f, 24.00f, 22.00f,
+    0.00f, 18.00f, 55.00f, 48.00f, 75.00f,
+    40.00f, 0.15f, 0.00f, 24.00f, 0.00f,
+    0.00f, 0.00f, 1.00f, 75.00f);
+
+presets.emplace_back("Thip",
+    2.00f, 0.00f, 70.00f, -7.00f, 0.00f, 0.00f, 35.00f,
+    0.00f, 0.00f, 14.00f, 55.00f, 42.00f, 0.00f,
+    0.00f, 60.00f, 60.00f, 2.00f, 14.00f,
+    0.00f, 14.00f, 0.00f, 30.00f, 0.00f,
+    15.00f, 0.18f, 0.00f, 24.00f, 0.00f,
+    0.00f, 0.00f, 1.00f, 25.00f);
+
+presets.emplace_back("Synth Tom",
+    1.00f, 0.00f, 10.00f, -12.00f, 0.00f, 0.00f, 76.00f,
+    0.00f, 1.00f, 30.00f, 26.00f, 34.00f, 0.00f,
+    12.00f, 60.00f, 60.00f, 0.00f, 40.00f,
+    0.00f, 40.00f, 8.00f, 36.00f, 0.00f,
+    24.00f, 0.18f, 0.00f, 12.00f, 0.00f,
+    0.00f, 0.00f, 1.00f, 20.00f);
+
+presets.emplace_back("Squelchy Frog",
+    4.00f, 2.00f, 55.00f, -5.00f, -7.90f, 2.00f, 77.00f,
+    0.00f, 1.00f, 42.00f, 50.00f, 62.00f, 0.00f,
+    0.00f, 60.00f, 60.00f, 22.00f, 32.00f,
+    0.00f, 18.00f, 0.00f, 50.00f, 45.00f,
+    16.00f, 0.22f, 18.00f, 0.00f, 0.00f,
+    0.00f, 0.00f, 1.00f, 55.00f); 
 }
 
 juce::AudioProcessorValueTreeState::ParameterLayout AndesJXAudioProcessor::createParameterLayout()
@@ -806,11 +1163,11 @@ juce::AudioProcessorValueTreeState::ParameterLayout AndesJXAudioProcessor::creat
         juce::AudioParameterFloatAttributes().withLabel("cent")));
 
     auto oscMixStringFromValue = [](float value, int)
-    {
-        const int osc1 = juce::roundToInt(100.0f - 0.5f * value);
-        const int osc2 = juce::roundToInt(0.5f * value);
-        return juce::String(osc1) + ":" + juce::String(osc2);
-    };
+        {
+            const int osc2 = juce::roundToInt(value);
+            const int osc1 = 100 - osc2;
+            return juce::String(osc1) + ":" + juce::String(osc2);
+        };
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(
         ParameterID::oscMix,
@@ -818,8 +1175,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout AndesJXAudioProcessor::creat
         juce::NormalisableRange<float>(0.0f, 100.0f),
         0.0f,
         juce::AudioParameterFloatAttributes()
-                .withLabel("%")
-                .withStringFromValueFunction(oscMixStringFromValue)));
+        .withStringFromValueFunction(oscMixStringFromValue)));
 
     layout.add(std::make_unique<juce::AudioParameterChoice>(
         ParameterID::glideMode,
