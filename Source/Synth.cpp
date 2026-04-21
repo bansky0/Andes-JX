@@ -446,7 +446,8 @@ void Synth::startVoice(int v, int note, int velocity)
 
 void Synth::noteOn(int note, int velocity)
 {
-    if (ignoreVelocity) { velocity = 80; }
+    velocity = juce::jlimit(0, 127, velocity);
+    keyVelocities[note] = velocity;
 
     const bool wasLegato = legatoOnThisNoteOn(note);
 
@@ -530,12 +531,11 @@ void Synth::noteOff(int note)
 
         // Verificar si hay otra tecla aún presionada
         const int topNote = topKey();  // última tecla presionada o -1
-
+       
         if (topNote >= 0)
         {
-            // HAY otra tecla presionada: cambiar a esa nota (legato)
-            // IMPORTANTE: velocity=0 indica que es un cambio legato sin retriggear
-            restartMonoVoice(topNote, 0);
+            // HAY otra tecla presionada: cambiar a esa nota manteniendo su velocity real.
+            restartMonoVoice(topNote, keyVelocities[topNote]);
             return;
         }
 
@@ -624,6 +624,7 @@ void Synth::reset()
     lastNote = -1;
     keyDown.fill(false);
     keyStackSize = 0;
+    keyVelocities.fill(100);
     //aftertouch = 0.0f;
     cc.filterPlus = 0.0f;
     cc.filterMinus = 0.0f;
@@ -652,6 +653,8 @@ void Synth::render(float** outputBuffers, int sampleCount)
     // 2) Render samples
     for (int sample = 0; sample < sampleCount; ++sample)
     {
+        keyVelocities.fill(100);
+
         // ---- LFO update cada 32 samples ----
         if (++lfoCounter >= LFO_MAX)
         {

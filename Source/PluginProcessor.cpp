@@ -493,17 +493,17 @@ void AndesJXAudioProcessor::update()
     synth.outputLevelSmoother.setTargetValue(gain);
     //synth.outputLevel = juce::Decibels::decibelsToGain(outputLevelParam->get());
        
-    float filterVelocity = filterVelocityParam->get();
-    if (filterVelocity <-90.0f) {
-        synth.velocitySensitivity = 0.0f;
-        synth.ignoreVelocity = true;
-    } else {
-        synth.velocitySensitivity = juce::jlimit(0.0f, 1.0f, std::abs(filterVelocity) / 100.0f);//0.0005f * filterVelocity;
+    const float filterVelocity = filterVelocityParam->get();
+
+    // amplitud: independiente del knob de filtro
+    synth.velocitySensitivity = 0.75f;
     synth.ignoreVelocity = false;
-    }
-    
-    // Actualizar velocity amount para el filtro
-    synth.filterVelocityAmount = std::abs(filterVelocityParam->get()) / 100.0f;
+
+    // filtro: sí depende del knob filterVelocity
+    if (filterVelocity < -90.0f)
+        synth.filterVelocityAmount = 0.0f;
+    else
+        synth.filterVelocityAmount = juce::jlimit(0.0f, 1.0f, std::abs(filterVelocity) / 100.0f);
 
     //Actualizar LFO
     const float lfoNorm = lfoRateParam->get();          // 0..1

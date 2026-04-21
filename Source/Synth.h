@@ -113,13 +113,14 @@ public:
     float noiseMix{};
 
 private:
-
+    
     WaveType osc1Wave = WaveType::Saw;
     WaveType osc2Wave = WaveType::Saw;
 
     // --- Key tracking ---
     std::array<bool, 128> keyDown{};     // true si la tecla está presionada
     std::array<int, 128>  keyStack{};    // stack de notas presionadas (orden)
+    std::array<int, 128> keyVelocities{};
     int keyStackSize = 0;
 
     bool noteIsDown(int note) const;
