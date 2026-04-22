@@ -60,6 +60,17 @@ public:
             x, y, width, height,
             0, frameIndex * frameHeight,
             frameWidth, frameHeight);
+
+        if (slider.isMouseOverOrDragging())
+        {
+            juce::String valueText = slider.getTextFromValue(slider.getValue());
+
+            auto textArea = juce::Rectangle<int>(x - 4, y - 4, width + 8, 12);
+
+            g.setColour(juce::Colour::fromRGB(0xD9, 0xD9, 0xD9));
+            g.setFont(juce::Font(7.5f));
+            g.drawFittedText(valueText, textArea, juce::Justification::centred, 1);
+        }
     }
 
 private:

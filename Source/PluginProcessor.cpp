@@ -1135,61 +1135,87 @@ juce::AudioProcessorValueTreeState::ParameterLayout AndesJXAudioProcessor::creat
         .withLabel("")
         .withStringFromValueFunction(keycenterStringFromValue)));
 
+    auto envStageStringFromValue = [](float value, int)
+        {
+            return juce::String(juce::roundToInt(value));
+        };
+
+    auto sustainStringFromValue = [](float value, int)
+        {
+            return juce::String(juce::roundToInt(value));
+        };
+
     layout.add(std::make_unique<juce::AudioParameterFloat>(
         ParameterID::filterAttack,
         "Filter Attack",
         juce::NormalisableRange<float>(0.0f, 100.0f, 1.0f),
         0.0f,
-        juce::AudioParameterFloatAttributes().withLabel("%")));
+        juce::AudioParameterFloatAttributes()
+        .withLabel("")
+        .withStringFromValueFunction(envStageStringFromValue)));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(
         ParameterID::filterDecay,
         "Filter Decay",
         juce::NormalisableRange<float>(0.0f, 100.0f, 1.0f),
         30.0f,
-        juce::AudioParameterFloatAttributes().withLabel("%")));
+        juce::AudioParameterFloatAttributes()
+        .withLabel("")
+        .withStringFromValueFunction(envStageStringFromValue)));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(
         ParameterID::filterSustain,
         "Filter Sustain",
         juce::NormalisableRange<float>(0.0f, 100.0f, 1.0f),
         0.0f,
-        juce::AudioParameterFloatAttributes().withLabel("%")));
+        juce::AudioParameterFloatAttributes()
+        .withLabel("")
+        .withStringFromValueFunction(sustainStringFromValue)));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(
         ParameterID::filterRelease,
         "Filter Release",
         juce::NormalisableRange<float>(0.0f, 100.0f, 1.0f),
         25.0f,
-        juce::AudioParameterFloatAttributes().withLabel("%")));
+        juce::AudioParameterFloatAttributes()
+        .withLabel("")
+        .withStringFromValueFunction(envStageStringFromValue)));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(
         ParameterID::envAttack,
         "Env Attack",
         juce::NormalisableRange<float>(0.0f, 100.0f, 1.0f),
         0.0f,
-        juce::AudioParameterFloatAttributes().withLabel("%")));
+        juce::AudioParameterFloatAttributes()
+        .withLabel("")
+        .withStringFromValueFunction(envStageStringFromValue)));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(
         ParameterID::envDecay,
         "Env Decay",
         juce::NormalisableRange<float>(0.0f, 100.0f, 1.0f),
         50.0f,
-        juce::AudioParameterFloatAttributes().withLabel("%")));
+        juce::AudioParameterFloatAttributes()
+        .withLabel("")
+        .withStringFromValueFunction(envStageStringFromValue)));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(
         ParameterID::envSustain,
         "Env Sustain",
         juce::NormalisableRange<float>(0.0f, 100.0f, 1.0f),
         100.0f,
-        juce::AudioParameterFloatAttributes().withLabel("%")));
+        juce::AudioParameterFloatAttributes()
+        .withLabel("")
+        .withStringFromValueFunction(sustainStringFromValue)));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(
         ParameterID::envRelease,
         "Env Release",
         juce::NormalisableRange<float>(0.0f, 100.0f, 1.0f),
         30.0f,
-        juce::AudioParameterFloatAttributes().withLabel("%")));
+        juce::AudioParameterFloatAttributes()
+        .withLabel("")
+        .withStringFromValueFunction(envStageStringFromValue)));
 
     auto lfoRateStringFromValue = [](float value, int)
     {
