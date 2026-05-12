@@ -13,8 +13,8 @@
     Purpose:
         EN: Defines the in-memory layout of a single factory preset and copies
             its 32 parameter values into a flat float array indexed by role.
-        ES: Define la estructura en memoria de un preset de f·brica y copia
-            sus 32 valores de par·metro a un arreglo float indexado por rol.
+        ES: Define la estructura en memoria de un preset de f√°brica y copia
+            sus 32 valores de par√°metro a un arreglo float indexado por rol.
 
     Main responsibilities:
         EN:
@@ -23,18 +23,18 @@
           - Map constructor arguments (p0..p31) to their semantic role via
             inline comments next to each assignment
         ES:
-          - Almacenar el nombre del preset como cadena C de tamaÒo fijo
-          - Contener los 32 valores de par·metros en un arreglo plano
-          - Mapear los argumentos del constructor (p0..p31) a su rol sem·ntico
-            mediante comentarios al lado de cada asignaciÛn
+          - Almacenar el nombre del preset como cadena C de tama√±o fijo
+          - Contener los 32 valores de par√°metros en un arreglo plano
+          - Mapear los argumentos del constructor (p0..p31) a su rol sem√°ntico
+            mediante comentarios al lado de cada asignaci√≥n
 
     Architectural role:
         EN: Consumed by the synthesizer when initializing the factory bank
             (see PluginProcessor::createPrograms). The parameter index order
             here MUST match the order declared in PluginProcessor and the
             value of NUM_PARAMS in Constants.h.
-        ES: Usado por el sintetizador al inicializar el banco de f·brica
-            (ver PluginProcessor::createPrograms). El orden de Ìndices DEBE
+        ES: Usado por el sintetizador al inicializar el banco de f√°brica
+            (ver PluginProcessor::createPrograms). El orden de √≠ndices DEBE
             coincidir con el declarado en PluginProcessor y con NUM_PARAMS
             en Constants.h.
 
@@ -47,11 +47,11 @@
           - `name` is fixed at 40 bytes; longer names are silently truncated
             and always null-terminated.
         ES:
-          - Los 32 par·metros (p0..p31) siguen una convenciÛn posicional en
+          - Los 32 par√°metros (p0..p31) siguen una convenci√≥n posicional en
             lugar de argumentos con nombre. Esto mantiene compacta la tabla
-            de presets, pero convierte a los comentarios de Ìndice de abajo
-            en la ˙nica fuente de verdad sobre el significado de cada slot.
-          - `name` tiene 40 bytes fijos; nombres m·s largos se truncan en
+            de presets, pero convierte a los comentarios de √≠ndice de abajo
+            en la √∫nica fuente de verdad sobre el significado de cada slot.
+          - `name` tiene 40 bytes fijos; nombres m√°s largos se truncan en
             silencio y siempre quedan terminados en nulo.
 */
 
@@ -75,8 +75,8 @@ struct Preset
     {
         // EN: Safe copy of the preset name; guarantees null-termination
         //     even if presetName is longer than the buffer.
-        // ES: Copia segura del nombre del preset; garantiza terminaciÛn nula
-        //     incluso si presetName es m·s largo que el buffer.
+        // ES: Copia segura del nombre del preset; garantiza terminaci√≥n nula
+        //     incluso si presetName es m√°s largo que el buffer.
         std::strncpy(name, presetName, sizeof(name) - 1);
         name[sizeof(name) - 1] = '\0';
 
@@ -84,8 +84,8 @@ struct Preset
         //     These inline comments are the canonical reference for the role
         //     of each index across the entire codebase.
         // ES: Mapeo posicional de los argumentos del constructor a los slots
-        //     de par·metros. Estos comentarios son la referencia canÛnica
-        //     del rol de cada Ìndice en todo el cÛdigo.
+        //     de par√°metros. Estos comentarios son la referencia can√≥nica
+        //     del rol de cada √≠ndice en todo el c√≥digo.
         param[0] = p0;   // osc1Wave
         param[1] = p1;   // osc2Wave
         param[2] = p2;   // oscMix
@@ -122,13 +122,13 @@ struct Preset
 
     // EN: Fixed-size storage. 40 bytes covers preset names like
     //     "Bass - Sincholagua Staccato" with margin to spare.
-    // ES: Almacenamiento de tamaÒo fijo. 40 bytes alcanzan para nombres como
+    // ES: Almacenamiento de tama√±o fijo. 40 bytes alcanzan para nombres como
     //     "Bass - Sincholagua Staccato" con margen de sobra.
     char name[40];
 
     // EN: Flat parameter array. Size is locked to NUM_PARAMS (Constants.h)
     //     so the contract stays consistent across the codebase.
-    // ES: Arreglo plano de par·metros. Su tamaÒo est· atado a NUM_PARAMS
+    // ES: Arreglo plano de par√°metros. Su tama√±o est√° atado a NUM_PARAMS
     //     (Constants.h) para mantener el contrato consistente.
     float param[NUM_PARAMS];
 };

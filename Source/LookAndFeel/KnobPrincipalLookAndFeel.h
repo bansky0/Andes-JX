@@ -26,11 +26,11 @@
             Renderiza cada knob como un sprite animado desde un sprite
             sheet pre-renderizado (AndesKnobPrincipal2.png) y SIEMPRE
             superpone el texto del valor actual en el centro del knob,
-            con dos layouts posibles seg˙n quÈ knob se estÈ dibujando:
+            con dos layouts posibles seg√∫n qu√© knob se est√© dibujando:
               - layout twoLine (output, filterReso, filterFreq): valor
                 arriba, sufijo de unidad abajo ("0.0" / "dB").
-              - layout singleLine (oscMix y cualquier adiciÛn futura):
-                una ˙nica string concisa ("70:30" para mix, etc.).
+              - layout singleLine (oscMix y cualquier adici√≥n futura):
+                una √∫nica string concisa ("70:30" para mix, etc.).
 
     Architectural role:
         EN: Same sprite-sheet paradigm as SecondaryKnobLookAndFeel,
@@ -50,8 +50,8 @@
             pero con tres mejoras intencionales de riqueza que
             justifican su existencia como clase separada:
               - El texto interno del valor SIEMPRE se dibuja (no es
-                opcional vÌa flag). Los knobs principales no tienen
-                labels externos de valor, asÌ que el texto adentro del
+                opcional v√≠a flag). Los knobs principales no tienen
+                labels externos de valor, as√≠ que el texto adentro del
                 knob ES el display del valor. Contrasta con los knobs
                 secundarios, que dependen de labels dibujados al lado
                 por el editor.
@@ -96,7 +96,7 @@
             resolveTwoLineValueFontHeight, resolvePrimaryText y
             resolveSecondaryText establece un contrato con
             PluginEditor::initialiseKnobs: si el componentID de un
-            knob principal llegara a cambiar allÌ, las ramas
+            knob principal llegara a cambiar all√≠, las ramas
             correspondientes del switch en esta clase deben
             actualizarse para coincidir. Los IDs actuales son
             "oscMix", "filterFreq", "filterReso", "output".
@@ -106,22 +106,22 @@
                 control de salida master.
               - "compact" (compactValueFontHeight, default 8.5 pt) lo
                 usan filterFreq y filterReso. Junto con la fuente
-                singleLine (tambiÈn 8.5 pt para oscMix), esto da a
+                singleLine (tambi√©n 8.5 pt para oscMix), esto da a
                 tres de los cuatro knobs principales el mismo peso
                 de texto de valor, mientras que output destaca como
-                el "m·s fuerte".
-          - Todas las fuentes se construyen vÌa
+                el "m√°s fuerte".
+          - Todas las fuentes se construyen v√≠a
             AndesStyleHelpers::makeUIFont para que el texto de valor
             del knob use la misma typeface Arial-no-bold que el resto
             de AndesJX (ver los docs de makeUIFont para la trampa de
-            bold-por-defecto-seg˙n-host contra la que defiende).
+            bold-por-defecto-seg√∫n-host contra la que defiende).
           - Para oscMix, este LookAndFeel REPLICA intencionadamente el
             mismo formato "osc1:osc2" que el formateador de string del
-            APVTS aplica en createParameterLayout. La duplicaciÛn es
+            APVTS aplica en createParameterLayout. La duplicaci√≥n es
             deliberada: el formateador del APVTS es lo que muestra el
-            host en sus lanes de automatizaciÛn; este formateador es
+            host en sus lanes de automatizaci√≥n; este formateador es
             lo que el usuario ve dentro del knob. Ambos DEBEN
-            mantenerse en sincronÌa para que las vistas del GUI y del
+            mantenerse en sincron√≠a para que las vistas del GUI y del
             host coincidan.
 */
 
@@ -139,8 +139,8 @@ public:
     //     SecondaryKnobLookAndFeel: multiple instances of this class
     //     reuse the already-decoded image.
     // ES: Carga el sprite sheet del knob principal desde BinaryData
-    //     vÌa juce::ImageCache. Misma razÛn de caching que
-    //     SecondaryKnobLookAndFeel: m˙ltiples instancias de esta clase
+    //     v√≠a juce::ImageCache. Misma raz√≥n de caching que
+    //     SecondaryKnobLookAndFeel: m√∫ltiples instancias de esta clase
     //     reusan la imagen ya decodificada.
     KnobPrincipalLookAndFeel()
     {
@@ -158,7 +158,7 @@ public:
 
     // EN: JUCE calls this every time a rotary slider needs repainting.
     //     Same five-step sprite-sheet workflow as
-    //     SecondaryKnobLookAndFeel ó see that file for the canonical
+    //     SecondaryKnobLookAndFeel ‚Äî see that file for the canonical
     //     description. Two differences:
     //       - The internal value text is drawn UNCONDITIONALLY at
     //         the end of every paint, because the headline knobs have
@@ -168,13 +168,13 @@ public:
     //         sprite frames).
     // ES: JUCE llama esto cada vez que un slider rotatorio necesita
     //     repintarse. Mismo flujo de cinco pasos del sprite sheet que
-    //     SecondaryKnobLookAndFeel ó ver ese archivo para la
-    //     descripciÛn canÛnica. Dos diferencias:
-    //       - El texto interno del valor se dibuja SIN CONDICI”N al
+    //     SecondaryKnobLookAndFeel ‚Äî ver ese archivo para la
+    //     descripci√≥n can√≥nica. Dos diferencias:
+    //       - El texto interno del valor se dibuja SIN CONDICI√ìN al
     //         final de cada paint, porque los knobs principales no
     //         tienen label externo.
-    //       - Los ·ngulos rotaryStart/End se ignoran por la misma
-    //         razÛn que el knob secundario (la rotaciÛn est·
+    //       - Los √°ngulos rotaryStart/End se ignoran por la misma
+    //         raz√≥n que el knob secundario (la rotaci√≥n est√°
     //         pre-pintada en los frames del sprite).
     void drawRotarySlider(juce::Graphics& g,
         int x, int y, int width, int height,
@@ -225,12 +225,12 @@ public:
     //                                  Default 8.5 pt.
     //     Defaults are tuned for the AndesJX shipping artwork; the
     //     editor adjusts them in initialiseLookAndFeels.
-    // ES: Cuatro tamaÒos de fuente para cuatro roles de texto dentro
+    // ES: Cuatro tama√±os de fuente para cuatro roles de texto dentro
     //     del knob:
-    //       - mainValueFontHeight    : n˙mero del valor en layout
+    //       - mainValueFontHeight    : n√∫mero del valor en layout
     //                                  twoLine para el knob principal
     //                                  "fuerte" (output). Default 10 pt.
-    //       - compactValueFontHeight : n˙mero del valor en layout
+    //       - compactValueFontHeight : n√∫mero del valor en layout
     //                                  twoLine para los knobs
     //                                  principales "compactos"
     //                                  (filterFreq, filterReso).
@@ -238,10 +238,10 @@ public:
     //       - unitFontHeight         : sufijo de unidad debajo del
     //                                  valor en layout twoLine
     //                                  ("dB", "%"). Default 7.5 pt.
-    //       - singleLineFontHeight   : la ˙nica string que usa el
+    //       - singleLineFontHeight   : la √∫nica string que usa el
     //                                  layout singleLine (oscMix).
     //                                  Default 8.5 pt.
-    //     Los defaults est·n afinados para el arte que se entrega con
+    //     Los defaults est√°n afinados para el arte que se entrega con
     //     AndesJX; el editor los ajusta en initialiseLookAndFeels.
     void setMainValueFontHeight(float newHeight) noexcept { mainValueFontHeight = newHeight; }
     void setCompactValueFontHeight(float newHeight) noexcept { compactValueFontHeight = newHeight; }
@@ -291,20 +291,20 @@ private:
     // ES: Dibuja el texto del valor dentro del knob. Dos layouts:
     //
     //       twoLine: valor arriba + unidad abajo, separados por un
-    //         pequeÒo espaciado vertical. Se usa cuando el valor se
-    //         beneficia de un sufijo de unidad que no entra cÛmodo
-    //         en la misma lÌnea ("0.0 dB" quedarÌa apretado al
-    //         di·metro del knob). El alto de fuente del valor se
-    //         elige por knob vÌa resolveTwoLineValueFontHeight, asÌ
-    //         el knob output puede ser visualmente m·s fuerte que
+    //         peque√±o espaciado vertical. Se usa cuando el valor se
+    //         beneficia de un sufijo de unidad que no entra c√≥modo
+    //         en la misma l√≠nea ("0.0 dB" quedar√≠a apretado al
+    //         di√°metro del knob). El alto de fuente del valor se
+    //         elige por knob v√≠a resolveTwoLineValueFontHeight, as√≠
+    //         el knob output puede ser visualmente m√°s fuerte que
     //         filterFreq / filterReso.
     //
-    //       singleLine: una ˙nica string ajustada horizontalmente.
+    //       singleLine: una √∫nica string ajustada horizontalmente.
     //         Se usa cuando el valor es auto-explicativo o lo
     //         bastante compacto para no necesitar una unidad
     //         separada ("70:30" para mix).
     //
-    //     La reducciÛn de 2 px arriba crea un margen visual entre el
+    //     La reducci√≥n de 2 px arriba crea un margen visual entre el
     //     texto del valor y el anillo interno de la imagen del knob,
     //     evitando que el texto toque el reborde.
     void drawKnobValueText(juce::Graphics& g,
@@ -330,7 +330,7 @@ private:
             // EN: Value sits just above the vertical center; unit just
             //     below it. The 12 / 8 px heights match the visual
             //     weight of the value and unit fonts respectively.
-            // ES: El valor se sit˙a justo arriba del centro vertical;
+            // ES: El valor se sit√∫a justo arriba del centro vertical;
             //     la unidad justo debajo. Los altos 12 / 8 px coinciden
             //     con el peso visual de las fuentes de valor y unidad
             //     respectivamente.
@@ -347,7 +347,7 @@ private:
             // EN: Per-knob font height selection: output uses
             //     mainValueFontHeight (loud); filterFreq/filterReso
             //     use compactValueFontHeight (matches mix).
-            // ES: SelecciÛn del alto de fuente por knob: output usa
+            // ES: Selecci√≥n del alto de fuente por knob: output usa
             //     mainValueFontHeight (fuerte); filterFreq/filterReso
             //     usan compactValueFontHeight (coincide con mix).
             const float valueFontHeight = resolveTwoLineValueFontHeight(slider);
@@ -403,7 +403,7 @@ private:
     //     and the output knob stands out as the master.
     // ES: Elige el alto de fuente del valor dentro del layout twoLine.
     //     output recibe la fuente main "fuerte"; filterFreq y
-    //     filterReso reciben la fuente compact m·s chica para que los
+    //     filterReso reciben la fuente compact m√°s chica para que los
     //     tres knobs de "control" (mix, cutoff, resonance) compartan
     //     el mismo peso de texto de valor y el knob output destaque
     //     como master.
@@ -449,7 +449,7 @@ private:
     //       filterFreq -> porcentaje entero redondeado.
     //       filterReso -> porcentaje entero redondeado.
     //       (default)  -> getTextFromValue por defecto de JUCE, que
-    //                     usa el rango y paso del par·metro para el
+    //                     usa el rango y paso del par√°metro para el
     //                     formato.
     juce::String resolvePrimaryText(juce::Slider& slider) const
     {
@@ -484,7 +484,7 @@ private:
     //     given knob, or an empty string when there is no unit. Only
     //     consulted when the layout is twoLine.
     // ES: Devuelve la string de texto SECUNDARIA (el sufijo de unidad)
-    //     para un knob dado, o una string vacÌa cuando no hay unidad.
+    //     para un knob dado, o una string vac√≠a cuando no hay unidad.
     //     Solo se consulta cuando el layout es twoLine.
     juce::String resolveSecondaryText(juce::Slider& slider) const
     {
@@ -500,7 +500,7 @@ private:
 private:
     // ------------------------------------------------------------------------
     //  Sprite sheet + font configuration
-    //  Sprite sheet + configuraciÛn de fuentes
+    //  Sprite sheet + configuraci√≥n de fuentes
     // ------------------------------------------------------------------------
 
     juce::Image knobImage;

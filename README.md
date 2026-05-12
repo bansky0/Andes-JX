@@ -18,6 +18,12 @@
 [![Built with: JUCE](https://img.shields.io/badge/Built_with-JUCE-8b00ff.svg)](https://juce.com/)
 [![NoiseRoomUIO](https://img.shields.io/badge/By-NoiseRoomUIO-c63d2f.svg)](https://www.instagram.com/noiseroom.uio/)
 
+<div align="center">
+
+<img src="Docs/screenshots/ScreenshotAndesJX.png" alt="Andes JX Interface" width="720">
+
+</div>
+
 🌐 **Read in:** [English](#-andesjx--english-version) · [Español](#-andesjx--versión-en-español)
 
 </div>

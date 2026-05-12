@@ -1359,12 +1359,12 @@ void AndesJXAudioProcessor::createPrograms()
     //     constructor; pensado como hoja en blanco para que el usuario
     //     diseñe sus propios sonidos.
     presets.emplace_back("Init",
-        1.00f, 1.00f, 0.00f, -12.00f, 0.00f, 0.00f, 35.00f,
-        0.00f, 1.00f, 100.00f, 15.00f, 50.00f, 0.00f,
+        1.00f, 1.00f, 50.00f, -12.00f, 0.00f, 0.00f, 35.00f,
+        0.00f, 1.00f, 75.00f, 15.00f, 50.00f, 0.00f,
         0.00f, 100.00f, 60.00f, 0.00f, 30.00f,
         0.00f, 25.00f, 0.00f, 50.00f, 100.00f,
         30.00f, 0.81f, 0.00f, 0.00f, 0.00f,
-        0.00f, -3.00f, 1.00f, 0.00f);
+        0.00f, 0.00f, 1.00f, 50.00f);
 
 
     // ------------------------------------------------------------------------
@@ -1868,7 +1868,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout AndesJXAudioProcessor::creat
         ParameterID::oscMix,
         "Osc Mix",
         juce::NormalisableRange<float>(0.0f, 100.0f),
-        0.0f,
+        50.0f,
         juce::AudioParameterFloatAttributes()
         .withStringFromValueFunction(oscMixStringFromValue)));
 
@@ -1917,13 +1917,13 @@ juce::AudioProcessorValueTreeState::ParameterLayout AndesJXAudioProcessor::creat
         ParameterID::filterType,
         "Filter Type",
         juce::StringArray{ "SVF", "Moog" },
-        0));
+        1));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(
         ParameterID::filterFreq,
         "Filter Freq",
         juce::NormalisableRange<float>(0.0f, 100.0f, 0.1f),
-        100.0f,
+        75.0f,
         juce::AudioParameterFloatAttributes().withLabel("%")));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(
