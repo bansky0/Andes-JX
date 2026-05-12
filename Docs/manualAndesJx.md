@@ -212,7 +212,7 @@ That's it. You're now playing a synthesizer designed at 2,850 meters above sea l
 
 ## 4. Interface overview
 
-![Andes JX Interface](Docs/screenshots/ScreenshotAndesJX.png)
+![Andes JX Interface](screenshots/ScreenshotAndesJX.png)
 
 > 🖼️ **A screenshot of the Andes JX interface will appear here in the published version of this manual.**
 > *Image path*: `docs/screenshots/ScreenshotAndesJX.png`
