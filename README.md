@@ -1,10 +1,6 @@
-<!-- ============================================================== -->
-<!--                          AndesJX                               -->
-<!-- ============================================================== -->
-
 <div align="center">
 
-# 🎹 AndesJX
+# 🎹 Andes JX
 
 **Polyphonic subtractive synthesizer inspired by the Ecuadorian Andean geography.**
 
@@ -16,43 +12,39 @@
 [![Platform: Windows | macOS](https://img.shields.io/badge/Platform-Windows_%7C_macOS-lightgrey.svg)]()
 [![Format: VST3](https://img.shields.io/badge/Format-VST3-orange.svg)]()
 [![Built with: JUCE](https://img.shields.io/badge/Built_with-JUCE-8b00ff.svg)](https://juce.com/)
-[![NoiseRoomUIO](https://img.shields.io/badge/By-NoiseRoomUIO-c63d2f.svg)](https://www.instagram.com/noiseroom.uio/)
+[![NoiseRoom UIO](https://img.shields.io/badge/By-NoiseRoomUIO-c63d2f.svg)](https://www.instagram.com/noiseroom.uio/)
 
-<div align="center">
-
-<img src="Docs/screenshots/ScreenshotAndesJX.png" alt="Andes JX Interface" width="720">
+🌐 **Read in:** [English](#-andes-jx--english-version) · [Español](#-andes-jx--versión-en-español)
 
 </div>
 
-🌐 **Read in:** [English](#-andesjx--english-version) · [Español](#-andesjx--versión-en-español)
+<div align="center">
+
+<img src="Docs/screenshots/ScreenshotAndesJX.png" alt="Andes JX Interface" width="360">
 
 </div>
 
 ---
 
-<!-- ============================================================== -->
-<!--                       ENGLISH VERSION                          -->
-<!-- ============================================================== -->
+# 🇬🇧 Andes JX — English version
 
-# 🇬🇧 AndesJX — English version
+> **TL;DR** — Andes JX is a polyphonic subtractive synthesizer (VST3) inspired by the Andean geography of Ecuador. It combines a synthesis engine featuring two switchable filter models, 33 factory presets, and bilingual (English/Spanish) source code documentation designed to teach students and developers how DSP and audio plugin development actually work. Released under GPL v3. [Features](#-features) · [Get started](#-getting-started) · [Learn from the code](#-learn-from-the-code).
 
-> **TL;DR** — AndesJX is a polyphonic subtractive synthesizer (VST3) inspired by the Andean geography of Ecuador. It combines a synthesis engine featuring two switchable filter models, 33 factory presets, and bilingual (English/Spanish) source code documentation designed to teach students and developers how DSP and audio plugin development actually work. Released under GPL v3. [Features](#-features) · [Get started](#-getting-started) · [Learn from the code](#-learn-from-the-code).
+## 🌋 What is Andes JX?
 
-## 🌋 What is AndesJX?
+**Andes JX** is a polyphonic subtractive synthesizer developed in C++ with the JUCE framework. It blends the warmth of classic analog synthesizers (especially the Roland JX family) with a sonic and visual identity rooted in the Andean landscapes of Ecuador: páramos, snow-capped mountains, lakes and volcanoes.
 
-**AndesJX** is a polyphonic subtractive synthesizer developed in C++ with the JUCE framework. It blends the warmth of classic analog synthesizers (especially the Roland JX family) with a sonic and visual identity rooted in the Andean landscapes of Ecuador: páramos, snow-capped mountains, lakes and volcanoes.
-
-The plugin was born in 2025 as a product of **NoiseRoomUIO**, an independent audio laboratory based in Quito, designed for musicians and producers seeking an expressive tool with local character. Over time it evolved into something more: **an open educational project** where the code itself is meant to be read, studied and reused by students, teachers and developers who want to learn how a modern synthesizer is built from scratch.
+The plugin was born in 2025 as a product of **NoiseRoom UIO**, an independent audio laboratory based in Quito, designed for musicians and producers seeking an expressive tool with local character. Over time it evolved into something more: **an open educational project** where the code itself is meant to be read, studied and reused by students, teachers and developers who want to learn how a modern synthesizer is built from scratch.
 
 ## 🎯 Dual purpose: instrument + pedagogical resource
 
-**As a musical instrument**, AndesJX provides a subtractive synthesis engine with two anti-aliased oscillators, two switchable filter models, independent ADSR envelopes for amplitude and filter, LFO modulation, configurable glide and 33 factory presets organized by sound family.
+**As a musical instrument**, Andes JX provides a subtractive synthesis engine with two anti-aliased oscillators, two switchable filter models, independent ADSR envelopes for amplitude and filter, LFO modulation, configurable glide and 33 factory presets organized by sound family.
 
-**As a pedagogical resource**, all source code is documented **bilingually (English/Spanish)**, organized into a three-layer architecture (DSP, plugin logic, GUI) and structured so each component can be studied independently. Students and professionals can use AndesJX as a starting point to understand how an audio plugin works internally, what design decisions sit behind each module, and how to modify or extend the code to build their own instruments.
+**As a pedagogical resource**, all source code is documented **bilingually (English/Spanish)**, organized into a three-layer architecture (DSP, plugin logic, GUI) and structured so each component can be studied independently. Students and professionals can use Andes JX as a starting point to understand how an audio plugin works internally, what design decisions sit behind each module, and how to modify or extend the code to build their own instruments.
 
 ## 🏗️ Architecture
 
-AndesJX is structured in three clearly separated layers:
+Andes JX is structured in three clearly separated layers:
 
 ```
 ┌──────────────────────────────────────────────────┐
@@ -136,7 +128,7 @@ Each name evokes a real place in the Ecuadorian Andes: volcanoes, snow-capped pe
 
 ## 📜 Concept evolution
 
-AndesJX did not start as it exists today. The first version (2025) focused on the 8 active volcanoes of Ecuador, with a warm three-tone palette and a simpler DSP architecture. As development progressed, the concept expanded:
+Andes JX did not start as it exists today. The first version (2025) focused on the 8 active volcanoes of Ecuador, with a warm three-tone palette and a simpler DSP architecture. As development progressed, the concept expanded:
 
 - From **volcanoes only** to **complete Ecuadorian Andean geography** (snow peaks, lakes, páramos).
 - From **8 presets** to **33 organized by sound family**.
@@ -147,14 +139,14 @@ The original concept document (`concept.md`) is preserved in the repository as a
 ## 🛠️ Technologies
 
 - **Language**: C++17.
-- **Framework**: [JUCE](https://juce.com/). AndesJX uses JUCE for general infrastructure (parameter management, MIDI, GUI, VST3 format), but the main components of the synthesis engine are **original implementations inspired by state-of-the-art technical literature**, not direct wrappers of JUCE classes.
+- **Framework**: [JUCE](https://juce.com/). Andes JX uses JUCE for general infrastructure (parameter management, MIDI, GUI, VST3 format), but the main components of the synthesis engine are **original implementations inspired by state-of-the-art technical literature**, not direct wrappers of JUCE classes.
 - **Build**: [Projucer](https://juce.com/discover/projucer) (included with JUCE).
 - **Target platforms**: Windows (VST3), macOS (VST3, AU planned).
 - **No external dependencies** beyond JUCE.
 
 ## 📚 Learn from the code
 
-AndesJX is designed so the source code itself serves as a learning resource. Suggested reading order:
+Andes JX is designed so the source code itself serves as a learning resource. Suggested reading order:
 
 **To understand the synthesis engine (DSP)**:
 - `Source/Constants.h` and `Source/Utils.h` — project-wide constants and utilities.
@@ -176,13 +168,13 @@ Each file is **bilingually documented (EN/ES)** with blocks explaining the modul
 
 ## 🚀 Getting started
 
-### Use AndesJX as an instrument
+### Use Andes JX as an instrument
 
-1. Download the VST3 installer (coming soon for Windows and macOS from the NoiseRoomUIO website).
+1. Download the VST3 installer (coming soon for Windows and macOS from the NoiseRoom UIO website).
 2. Place the `.vst3` file in your DAW's plugin folder:
    - **Windows**: `C:\Program Files\Common Files\VST3\`
    - **macOS**: `/Library/Audio/Plug-Ins/VST3/`
-3. Open your DAW (Reaper, Ableton, FL Studio, Logic, Cubase, etc.), rescan plugins, and AndesJX will appear in the instrument list.
+3. Open your DAW (Reaper, Ableton, FL Studio, Logic, Cubase, etc.), rescan plugins, and Andes JX will appear in the instrument list.
 
 ### Build from source
 
@@ -196,9 +188,9 @@ Each file is **bilingually documented (EN/ES)** with blocks explaining the modul
 4. Export the project to your preferred IDE (Visual Studio for Windows, Xcode for macOS).
 5. Build as VST3.
 
-## 🔧 Use AndesJX as a starting point for your own project
+## 🔧 Use Andes JX as a starting point for your own project
 
-AndesJX is released under GPL v3, which means you can:
+Andes JX is released under GPL v3, which means you can:
 - ✅ Fork and modify it freely for personal or educational use.
 - ✅ Distribute your modified version, **as long as it is also released under GPL v3** (copyleft).
 - ✅ Use it as the basis for courses, workshops and academic projects without restriction.
@@ -214,7 +206,7 @@ If you want to contribute directly to the original project, pull requests are we
 
 ## 📖 References
 
-The development of AndesJX is built on recognized technical literature in the field of audio DSP and plugin development:
+The development of Andes JX is built on recognized technical literature in the field of audio DSP and plugin development:
 
 **Methodological foundations**:
 - Hollemans, M., & Hodge, J. *Creating Synthesizer Plug-Ins with C++ and JUCE*. 
@@ -229,26 +221,26 @@ Note: This work was developed using earlier iterations of the material (original
 - Huovilainen, A. (2004). *Non-Linear Digital Implementation of the Moog Ladder Filter*. Proceedings of DAFx-04, Naples. → Moog filter model with non-linear saturation.
 - Simper, A. (2013). *Linear Trapezoidal State Variable Filter SVF in state increment form*. Cytomic Technical Papers. → topology-preserving SVF model.
 
-Each reference is cited in the code comments where the technique is applied. To go deeper, read AndesJX's source first, then go to the original publication for the full theoretical context.
+Each reference is cited in the code comments where the technique is applied. To go deeper, read Andes JX's source first, then go to the original publication for the full theoretical context.
 
 ## 👥 Team
 
 | Person | Contributions | Affiliation |
 |--------|---------------|-------------|
-| **Jhonatan Guillermo López-Pilco** | Concept, design and overall project architecture. DSP engine implementation (oscillators, filters, envelopes, modulation). GUI design and implementation. Bilingual code documentation. | LASINAC, FIS, Escuela Politécnica Nacional, Quito, Ecuador |
-| **Valeria Natacha Villarreal Villarreal** | Implementation of complementary DSP components. Testing, validation and design feedback for the instrument. | Instituto Tecnológico de Artes del Ecuador (ITAE), Guayaquil, Ecuador (primary) · Universidad de las Américas (UDLA), Quito, Ecuador (secondary) |
+| **Jhonatan G. López-Pilco** | Concept, design and overall project architecture. DSP engine implementation (oscillators, filters, envelopes, modulation). GUI design and implementation. Bilingual code documentation. | LASINAC, FIS, Escuela Politécnica Nacional, Quito, Ecuador |
+| **Valeria N. Villarreal-Villarreal** | Implementation of complementary DSP components. Testing, validation and design feedback for the instrument. | Instituto Tecnológico de Artes del Ecuador (ITAE), Guayaquil, Ecuador (primary) · Universidad de las Américas (UDLA), Quito, Ecuador (secondary) |
 
-## 🎵 About NoiseRoomUIO
+## 🎵 About NoiseRoom UIO
 
-**NoiseRoomUIO** is an independent audio laboratory based in Quito, Ecuador, combining music production, sound design and technological research. The "UIO" in the name is Quito's airport code and marks the project's geographical origin.
+**NoiseRoom UIO** is an independent audio laboratory based in Quito, Ecuador, combining music production, sound design and technological research. The "UIO" in the name is Quito's airport code and marks the project's geographical origin.
 
-AndesJX is the **third audio plugin** in the NoiseRoomUIO catalog, after **Classic Compressor CCMKI** (audio compressor) and **NoiseReverb** (impulse-response-based reverb captured in churches around Quito). The lab also produces hardware prototypes (Bluetooth speakers) and audiovisual projects.
+Andes JX is the **third audio plugin** in the NoiseRoom UIO catalog, after **Classic Compressor CCMKI** (audio compressor) and **NoiseReverb** (impulse-response-based reverb captured in churches around Quito). The lab also produces hardware prototypes (Bluetooth speakers) and audiovisual projects.
 
 📷 [@noiseroom.uio on Instagram](https://www.instagram.com/noiseroom.uio/)
 
 ## 📜 License
 
-AndesJX is distributed under the **[GNU General Public License v3 (GPL v3)](./LICENSE)**.
+Andes JX is distributed under the **[GNU General Public License v3 (GPL v3)](./LICENSE)**.
 
 You are free to use, study, modify and distribute the software, as long as derivative works are released under the same license. See the [LICENSE](./LICENSE) file for legal details.
 
@@ -260,36 +252,32 @@ For bugs, feature suggestions or technical questions about the code, please use 
 
 <div align="center">
 
-🌐 [Switch to Spanish version ↓](#-andesjx--versión-en-español)
+🌐 [Switch to Spanish version ↓](#-andes-jx--versión-en-español)
 
 </div>
 
 ---
 ---
 
-<!-- ============================================================== -->
-<!--                       SPANISH VERSION                          -->
-<!-- ============================================================== -->
+# 🇪🇸 Andes JX — Versión en Español
 
-# 🇪🇸 AndesJX — Versión en Español
+> **TL;DR** — Andes JX es un sintetizador sustractivo polifónico (VST3) inspirado en la geografía andina del Ecuador. Combina un motor de síntesis con dos modelos de filtro conmutables, 33 presets de fábrica y código documentado en español/inglés pensado para que estudiantes y desarrolladores aprendan cómo funcionan realmente el DSP y el desarrollo de plugins. Licencia GPL v3. [Características](#-características) · [Cómo empezar](#-cómo-empezar) · [Aprende del código](#-aprende-del-código).
 
-> **TL;DR** — AndesJX es un sintetizador sustractivo polifónico (VST3) inspirado en la geografía andina del Ecuador. Combina un motor de síntesis con dos modelos de filtro conmutables, 33 presets de fábrica y código documentado en español/inglés pensado para que estudiantes y desarrolladores aprendan cómo funcionan realmente el DSP y el desarrollo de plugins. Licencia GPL v3. [Características](#-características) · [Cómo empezar](#-cómo-empezar) · [Aprende del código](#-aprende-del-código).
+## 🌋 ¿Qué es Andes JX?
 
-## 🌋 ¿Qué es AndesJX?
+**Andes JX** es un sintetizador sustractivo polifónico desarrollado en C++ con el framework JUCE. Combina la calidez de los sintetizadores analógicos clásicos (especialmente la familia Roland JX) con una identidad sonora y visual propia, construida a partir de los paisajes andinos del Ecuador: páramos, nevados, lagunas y volcanes.
 
-**AndesJX** es un sintetizador sustractivo polifónico desarrollado en C++ con el framework JUCE. Combina la calidez de los sintetizadores analógicos clásicos (especialmente la familia Roland JX) con una identidad sonora y visual propia, construida a partir de los paisajes andinos del Ecuador: páramos, nevados, lagunas y volcanes.
-
-El plugin nació en 2025 como un producto de **NoiseRoomUIO**, un laboratorio independiente de audio con sede en Quito, pensado para músicos y productores que buscan una herramienta expresiva con carácter local. Con el tiempo evolucionó hacia algo más: **un proyecto educativo abierto** donde el código mismo está pensado para ser leído, estudiado y reutilizado por estudiantes, profesores y desarrolladores que quieran aprender cómo se construye un sintetizador moderno desde cero.
+El plugin nació en 2025 como un producto de **NoiseRoom UIO**, un laboratorio independiente de audio con sede en Quito, pensado para músicos y productores que buscan una herramienta expresiva con carácter local. Con el tiempo evolucionó hacia algo más: **un proyecto educativo abierto** donde el código mismo está pensado para ser leído, estudiado y reutilizado por estudiantes, profesores y desarrolladores que quieran aprender cómo se construye un sintetizador moderno desde cero.
 
 ## 🎯 Doble propósito: instrumento + recurso pedagógico
 
-**Como instrumento musical**, AndesJX ofrece un motor de síntesis sustractiva con dos osciladores con anti-aliasing, dos modelos de filtro conmutables, envolventes ADSR independientes para amplitud y filtro, modulación por LFO, glide configurable y un banco de 33 presets organizados por familias sonoras.
+**Como instrumento musical**, Andes JX ofrece un motor de síntesis sustractiva con dos osciladores con anti-aliasing, dos modelos de filtro conmutables, envolventes ADSR independientes para amplitud y filtro, modulación por LFO, glide configurable y un banco de 33 presets organizados por familias sonoras.
 
-**Como recurso pedagógico**, todo el código fuente está documentado de forma **bilingüe (inglés/español)**, organizado en una arquitectura de tres capas (DSP, lógica del plugin, GUI) y estructurado para que cada componente pueda estudiarse de manera independiente. Estudiantes y profesionales pueden usar AndesJX como punto de partida para entender cómo funciona un plugin de audio por dentro, qué decisiones de diseño hay detrás de cada módulo y cómo modificar o extender el código para construir sus propios instrumentos.
+**Como recurso pedagógico**, todo el código fuente está documentado de forma **bilingüe (inglés/español)**, organizado en una arquitectura de tres capas (DSP, lógica del plugin, GUI) y estructurado para que cada componente pueda estudiarse de manera independiente. Estudiantes y profesionales pueden usar Andes JX como punto de partida para entender cómo funciona un plugin de audio por dentro, qué decisiones de diseño hay detrás de cada módulo y cómo modificar o extender el código para construir sus propios instrumentos.
 
 ## 🏗️ Arquitectura
 
-AndesJX está estructurado en tres capas claramente separadas:
+Andes JX está estructurado en tres capas claramente separadas:
 
 ```
 ┌──────────────────────────────────────────────────┐
@@ -373,7 +361,7 @@ Cada nombre evoca un lugar real del Ecuador andino: volcanes, nevados, lagunas d
 
 ## 📜 Evolución del concepto
 
-AndesJX no nació tal como existe hoy. La primera versión (2025) se centraba en los 8 volcanes activos del Ecuador, con una paleta de tres tonos cálidos y una arquitectura DSP más simple. A medida que el proyecto avanzó, el concepto se expandió:
+Andes JX no nació tal como existe hoy. La primera versión (2025) se centraba en los 8 volcanes activos del Ecuador, con una paleta de tres tonos cálidos y una arquitectura DSP más simple. A medida que el proyecto avanzó, el concepto se expandió:
 
 - De **solo volcanes** a **geografía andina ecuatoriana completa** (nevados, lagunas, páramos).
 - De **8 presets** a **33 organizados por familia sonora**.
@@ -384,14 +372,14 @@ El documento original del concepto (`concept.md`) se conserva en el repositorio 
 ## 🛠️ Tecnologías
 
 - **Lenguaje**: C++17.
-- **Framework**: [JUCE](https://juce.com/). AndesJX usa JUCE para la infraestructura general (gestión de parámetros, MIDI, GUI, formato VST3), pero los componentes principales del motor de síntesis son **implementaciones propias inspiradas en literatura técnica del estado del arte**, no wrappers directos de las clases de JUCE.
+- **Framework**: [JUCE](https://juce.com/). Andes JX usa JUCE para la infraestructura general (gestión de parámetros, MIDI, GUI, formato VST3), pero los componentes principales del motor de síntesis son **implementaciones propias inspiradas en literatura técnica del estado del arte**, no wrappers directos de las clases de JUCE.
 - **Build**: [Projucer](https://juce.com/discover/projucer) (incluido con JUCE).
 - **Plataformas objetivo**: Windows (VST3), macOS (VST3, AU planeado).
 - **Sin dependencias externas** más allá de JUCE.
 
 ## 📚 Aprende del código
 
-AndesJX está diseñado para que el código fuente sirva como recurso de aprendizaje. Orden de lectura sugerido:
+Andes JX está diseñado para que el código fuente sirva como recurso de aprendizaje. Orden de lectura sugerido:
 
 **Para entender el motor de síntesis (DSP)**:
 - `Source/Constants.h` y `Source/Utils.h` — constantes y utilidades del proyecto.
@@ -413,13 +401,13 @@ Cada archivo está **documentado de forma bilingüe (EN/ES)** con bloques que ex
 
 ## 🚀 Cómo empezar
 
-### Usar AndesJX como instrumento
+### Usar Andes JX como instrumento
 
-1. Descarga el instalador VST3 (próximamente disponible para Windows y macOS desde la web de NoiseRoomUIO).
+1. Descarga el instalador VST3 (próximamente disponible para Windows y macOS desde la web de NoiseRoom UIO).
 2. Coloca el archivo `.vst3` en la carpeta de plugins de tu DAW:
    - **Windows**: `C:\Program Files\Common Files\VST3\`
    - **macOS**: `/Library/Audio/Plug-Ins/VST3/`
-3. Abre tu DAW (Reaper, Ableton, FL Studio, Logic, Cubase, etc.), escanea plugins nuevos y AndesJX aparecerá en la lista de instrumentos.
+3. Abre tu DAW (Reaper, Ableton, FL Studio, Logic, Cubase, etc.), escanea plugins nuevos y Andes JX aparecerá en la lista de instrumentos.
 
 ### Compilar desde el código fuente
 
@@ -433,9 +421,9 @@ Cada archivo está **documentado de forma bilingüe (EN/ES)** con bloques que ex
 4. Exporta el proyecto a tu IDE preferido (Visual Studio en Windows, Xcode en macOS).
 5. Compila como VST3.
 
-## 🔧 Usar AndesJX como base para tu propio proyecto
+## 🔧 Usar Andes JX como base para tu propio proyecto
 
-AndesJX se distribuye bajo licencia GPL v3, lo que significa que puedes:
+Andes JX se distribuye bajo licencia GPL v3, lo que significa que puedes:
 - ✅ Hacer un fork y modificarlo libremente para uso personal o educativo.
 - ✅ Distribuir tu versión modificada, **siempre que también sea bajo GPL v3** (copyleft).
 - ✅ Usarlo como base de cursos, talleres y proyectos académicos sin restricción.
@@ -451,7 +439,7 @@ Si quieres contribuir directamente al proyecto original, las pull requests son b
 
 ## 📖 Referencias
 
-El desarrollo de AndesJX se apoya en bibliografía técnica reconocida en el campo del DSP de audio y el desarrollo de plugins:
+El desarrollo de Andes JX se apoya en bibliografía técnica reconocida en el campo del DSP de audio y el desarrollo de plugins:
 
 **Pilares metodológicos**:
 - Hollemans, M., & Hodge, J. *Creating Synthesizer Plug-Ins with C++ and JUCE*. 
@@ -466,26 +454,26 @@ Nota: El desarrollo se basó en versiones previas del material (publicadas origi
 - Huovilainen, A. (2004). *Non-Linear Digital Implementation of the Moog Ladder Filter*. Proceedings of DAFx-04, Naples. → modelo de filtro Moog con saturación no-lineal.
 - Simper, A. (2013). *Linear Trapezoidal State Variable Filter SVF in state increment form*. Cytomic Technical Papers. → modelo SVF topology-preserving.
 
-Cada referencia está citada en los comentarios del código, en el archivo donde se aplica la técnica. Para profundizar, lee primero el código de AndesJX y luego ve a la fuente original para el contexto teórico completo.
+Cada referencia está citada en los comentarios del código, en el archivo donde se aplica la técnica. Para profundizar, lee primero el código de Andes JX y luego ve a la fuente original para el contexto teórico completo.
 
 ## 👥 Equipo
 
 | Persona | Aportes | Afiliación |
 |---------|---------|------------|
-| **Jhonatan Guillermo López-Pilco** | Concepto, diseño y arquitectura general del proyecto. Implementación del motor DSP (osciladores, filtros, envolventes, modulación). Diseño e implementación de la interfaz gráfica. Documentación bilingüe del código. | LASINAC, FIS, Escuela Politécnica Nacional, Quito, Ecuador |
-| **Valeria Natacha Villarreal Villarreal** | Implementación de componentes DSP complementarios. Pruebas, validación y retroalimentación de diseño del instrumento. | Instituto Tecnológico de Artes del Ecuador (ITAE), Guayaquil, Ecuador (principal) · Universidad de las Américas (UDLA), Quito, Ecuador (secundaria) |
+| **Jhonatan G. López-Pilco** | Concepto, diseño y arquitectura general del proyecto. Implementación del motor DSP (osciladores, filtros, envolventes, modulación). Diseño e implementación de la interfaz gráfica. Documentación bilingüe del código. | LASINAC, FIS, Escuela Politécnica Nacional, Quito, Ecuador |
+| **Valeria N. Villarreal-Villarreal** | Implementación de componentes DSP complementarios. Pruebas, validación y retroalimentación de diseño del instrumento. | Instituto Tecnológico de Artes del Ecuador (ITAE), Guayaquil, Ecuador (principal) · Universidad de las Américas (UDLA), Quito, Ecuador (secundaria) |
 
-## 🎵 Acerca de NoiseRoomUIO
+## 🎵 Acerca de NoiseRoom UIO
 
-**NoiseRoomUIO** es un laboratorio independiente de audio con base en Quito, Ecuador, que combina producción musical, diseño sonoro e investigación tecnológica. El "UIO" del nombre es el código de aeropuerto de Quito y marca la geografía de origen del proyecto.
+**NoiseRoom UIO** es un laboratorio independiente de audio con base en Quito, Ecuador, que combina producción musical, diseño sonoro e investigación tecnológica. El "UIO" del nombre es el código de aeropuerto de Quito y marca la geografía de origen del proyecto.
 
-AndesJX es **el tercer plugin de audio** del catálogo de NoiseRoomUIO, después de **Classic Compressor CCMKI** (compresor de audio) y **NoiseReverb** (reverb basada en respuestas impulsivas grabadas en iglesias de Quito). El laboratorio también desarrolla prototipos de hardware (parlantes Bluetooth) y proyectos audiovisuales.
+Andes JX es **el tercer plugin de audio** del catálogo de NoiseRoom UIO, después de **Classic Compressor CCMKI** (compresor de audio) y **NoiseReverb** (reverb basada en respuestas impulsivas grabadas en iglesias de Quito). El laboratorio también desarrolla prototipos de hardware (parlantes Bluetooth) y proyectos audiovisuales.
 
 📷 [@noiseroom.uio en Instagram](https://www.instagram.com/noiseroom.uio/)
 
 ## 📜 Licencia
 
-AndesJX se distribuye bajo la **[Licencia Pública General de GNU, versión 3 (GPL v3)](./LICENSE)**.
+Andes JX se distribuye bajo la **[Licencia Pública General de GNU, versión 3 (GPL v3)](./LICENSE)**.
 
 Tienes libertad para usar, estudiar, modificar y distribuir el software, siempre que las obras derivadas también se distribuyan bajo la misma licencia. Consulta el archivo [LICENSE](./LICENSE) para los detalles legales.
 
@@ -497,7 +485,7 @@ Para reportar bugs, sugerir mejoras o hacer preguntas técnicas sobre el código
 
 <div align="center">
 
-🌐 [Volver a la versión en inglés ↑](#-andesjx--english-version)
+🌐 [Volver a la versión en inglés ↑](#-andes-jx--english-version)
 
 **Desarrollado en Quito, Ecuador — a 2850 metros sobre el nivel del mar.**
 
