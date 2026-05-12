@@ -284,20 +284,24 @@ void AndesJXAudioProcessorEditor::initialiseBackground()
 
     if (backgroundAndesJX.isValid())
     {
-        // EN: The source PNG is exported at 4x for retina-quality
-        //     downsampling. juce::Graphics::highResamplingQuality uses
-        //     a higher-order filter (better than nearest/bilinear) so
-        //     edges stay clean.
-        // ES: El PNG original se exporta a 4x para hacer downsampling
-        //     calidad retina. juce::Graphics::highResamplingQuality usa
-        //     un filtro de orden alto (mejor que nearest/bilinear) para
-        //     que los bordes queden limpios.
-        backgroundAndesJX = backgroundAndesJX.rescaled(
-            backgroundAndesJX.getWidth() / 4,
-            backgroundAndesJX.getHeight() / 4,
-            juce::Graphics::highResamplingQuality);
-
-        setSize(backgroundAndesJX.getWidth(), backgroundAndesJX.getHeight());
+        // EN: The source PNG is exported at 4x its logical display size
+        //     to give JUCE extra resolution to draw from on HiDPI/Retina
+        //     displays. The image is NOT rescaled in memory: keeping the
+        //     full 4x pixel data lets paint() pick the right level of
+        //     detail at the actual display density (1x, 1.5x, 2x...).
+        //     The editor's logical size is set to width/4 and height/4
+        //     so the GUI lays out as if the artwork were 1x; JUCE handles
+        //     the pixel-mapping internally.
+        // ES: El PNG original se exporta a 4x su tamaño lógico de display
+        //     para dar a JUCE resolución extra desde la cual dibujar en
+        //     pantallas HiDPI/Retina. La imagen NO se reescala en memoria:
+        //     mantener los píxeles 4x permite que paint() elija el nivel
+        //     de detalle adecuado en la densidad real del display
+        //     (1x, 1.5x, 2x...). El tamaño lógico del editor se asigna a
+        //     width/4 y height/4 para que la GUI se disponga como si el
+        //     arte fuera 1x; JUCE maneja el mapeo de píxeles internamente.
+        setSize(backgroundAndesJX.getWidth() / 4,
+                backgroundAndesJX.getHeight() / 4);
     }
     else
     {
@@ -1868,6 +1872,18 @@ void AndesJXAudioProcessorEditor::paint(juce::Graphics& g)
 
     if (backgroundAndesJX.isValid())
     {
+        // EN: Use high-quality resampling when scaling the background
+        //     image down from its 4x source to the editor's logical
+        //     size. On HiDPI displays the system multiplies that logical
+        //     size again, and JUCE uses the source's full resolution
+        //     instead of upscaling pre-downscaled pixels.
+        // ES: Usar resampling de alta calidad al escalar la imagen de
+        //     fondo desde su fuente 4x al tamaño lógico del editor. En
+        //     pantallas HiDPI el sistema multiplica ese tamaño lógico de
+        //     nuevo, y JUCE usa la resolución completa de la fuente en
+        //     lugar de upscalar píxeles ya pre-reducidos.
+        g.setImageResamplingQuality(juce::Graphics::highResamplingQuality);
+
         g.drawImageWithin(
             backgroundAndesJX,
             0, 0,
