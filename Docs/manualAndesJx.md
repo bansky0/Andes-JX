@@ -214,9 +214,6 @@ That's it. You're now playing a synthesizer designed at 2,850 meters above sea l
 
 ![Andes JX Interface](screenshots/ScreenshotAndesJX.png)
 
-> 🖼️ **A screenshot of the Andes JX interface will appear here in the published version of this manual.**
-> *Image path*: `docs/screenshots/ScreenshotAndesJX.png`
-
 The Andes JX interface is divided into six zones. Each one groups related controls into a coherent section. The layout reads naturally from top-left to bottom-right, following the typical signal flow of a subtractive synthesizer.
 
 >📍 About this section. This is the map of the instrument: where each zone is, what kind of controls it groups, and what role it plays in the signal flow. The detailed behavior of each individual parameter (exact range, response curve, sonic effect) lives in section 5 — Synthesis engine, where each zone gets its own dedicated subsection.
@@ -239,7 +236,7 @@ it reaches the filter.
 
 - **MIX** (central knob) — blends between Osc 1 (left) and Osc 2 (right), 
   shown in real time as a `osc1:osc2` ratio.
-- **WIDTH** — stereo spread applied to the oscillator pair.
+- **WIDTH** — global stereo width control with a piano-like note distribution across the stereo field.
 - **NOISE** — independent noise generator added to the mix.
 - **TUNE** — global instrument tuning in cents (the equivalent of a 
   master tune knob).
@@ -397,9 +394,11 @@ The central knob of the oscillator section. Blends between Osc 1 (left) and Osc 
 
 `Range: 0–100 %` · `Step: 1` · `Default: 50 %`
 
-Stereo spread applied to the oscillator pair. At `0 %` both oscillators are mono-summed (centered). As you increase the width, Osc 1 pans toward the left channel and Osc 2 toward the right, creating a wider stereo image. The default of `50 %` gives Andes JX an immediately spatial character at the first touch.
+Global stereo width control. At `0 %`, voices remain mono-centered. As you increase WIDTH, lower notes stay closer to the center while higher notes spread progressively across the stereo field, producing a layout similar to a piano keyboard.
 
-> 💡 **Tip**: For pads, a width of `40–70 %` produces a spacious sound without becoming too "stereo-tricky". For bass, lower the width below `20 %` or to zero — wide bass loses definition on small speakers and mono-compatible playback systems.
+The default value of `50 %` gives Andes JX an immediate sense of space without exaggerating the stereo image.
+
+> 💡 **Tip**: For pads and wide textures, WIDTH between `40–70 %` usually works well. For basses, reduce WIDTH below `20 %` or set it to zero; low frequencies generally sound tighter and more solid when they stay near the center.
 
 #### NOISE
 
@@ -721,15 +720,19 @@ Located bottom-center of the interface, just below the Andes JX logo. The PRESET
 
 Sets the overall output level of Andes JX in decibels (dB). This is the final stage before audio leaves the plugin and reaches your DAW.
 
-The range covers `-24 dB` (significant attenuation, useful for layering Andes JX quietly under other instruments) to `+6 dB` (boost, useful when designing a patch that comes out quieter than the rest of your project).
+The range covers `-24 dB` (significant attenuation, useful for layering Andes JX quietly under other instruments) up to `+6 dB` (additional gain, useful when a patch comes out quieter than the rest of your project).
 
-The default of `0 dB` is **unity gain** — Andes JX outputs at the same level the synthesis engine produces internally, with no boost or attenuation.
+The default value of `0 dB` corresponds to **unity gain**: Andes JX outputs the exact level produced internally by the synthesis engine, with no additional amplification or attenuation.
 
-> 💡 **Tip**: If you find a particular patch is clipping in your DAW, lower the OUTPUT knob by 3–6 dB rather than turning down the channel fader. This keeps the rest of the mixing structure intact and gives you a consistent reference point. If you find a patch is too quiet relative to others, you can boost up to `+6 dB` here, but always check that no internal stage of the synth is also clipping (a high resonance + open filter + maxed output can produce clipping at the synthesis stage that boosting here will only amplify).
+Internally, the output stage includes a **soft-limiting function based on a sigmoid curve**. At moderate levels the behavior is effectively transparent, but as the signal approaches and exceeds `0 dB`, the stage begins introducing gentle saturation with odd-harmonic enrichment. The result is a warmer, denser character reminiscent of analog circuitry or lightly driven vacuum tubes.
+
+This means OUTPUT is not purely a volume control: it can also be used as a subtle tonal coloration stage.
+
+> 💡 **Tip**: If a patch is clipping in your DAW, reduce OUTPUT by `3–6 dB` instead of lowering the channel fader. This preserves your gain structure and gives you a more consistent reference point. If you want a more aggressive or warmer tone, pushing OUTPUT into positive values will drive the sigmoid saturation harder, adding harmonic density without the harsh character of hard digital clipping.
 
 ### About the Output knob's display
 
-The OUTPUT knob is one of the four "headline" knobs of Andes JX (along with MIX, CUTOFF and RESO). It uses the **two-line layout**: the value number on top (e.g. `0.0`) and the unit `dB` below it. The other three headline knobs use a more compact display that emphasizes their value over their unit. This visual difference reinforces OUTPUT's role as the master control of the instrument — it is meant to stand out.
+OUTPUT is one of the four “headline” knobs of Andes JX (along with MIX, CUTOFF and RESO). It uses the **two-line layout**: the numeric value on top (for example `0.0`) and the unit `dB` below it. The other three headline knobs use more compact displays that emphasize the value over the unit. This visual distinction reinforces OUTPUT's role as the instrument's master control — it is designed to stand out.
 
 ---
 
@@ -800,7 +803,6 @@ Custom (only visible when state diverges from any factory preset)
 ```
 
 For the complete catalog with descriptions, see section 9.
-
 
 ## 6. Sound design tutorials
 
@@ -904,7 +906,9 @@ Now play two notes in legato (press the second before releasing the first): the 
 - **Different character**: switch **TYPE** to **SVF** to hear the same patch with a cleaner, less colored filter.
 - **Wobble bass**: raise **GLIDE RATE** to `80 %` for slower, more obvious slides.
 
-> 🎓 **About high resonance on the Moog filter.** When resonance approaches `100 %` on the Moog ladder, the filter starts oscillating on its own — it produces a sine wave at the cutoff frequency even with no input. Below that threshold, high resonance still strongly emphasizes the cutoff frequency, which is what gives this bass its vocal, rubbery quality. The Moog model behaves more aggressively here than the SVF: the same `75 %` resonance value sounds noticeably tamer on SVF.
+> 🎓 **About resonance in the two filter models.** Although both filters share the same resonance range, they do not react in the same way. The Moog ladder filter introduces stronger high-frequency attenuation together with gentle non-linear saturation, producing a warmer and rounder character even at high resonance settings. The SVF, by contrast, preserves more high-frequency harmonic content, so its resonance feels brighter, sharper and more “edgy.”  
+>
+> In practice, this means the same resonance value (`75 %`, for example) can sound significantly more aggressive and bright on the SVF, while the Moog maintains a darker and denser tone. Switching between the two filters changes not only the cutoff response, but the entire harmonic balance of the sound.
 
 ---
 
@@ -987,7 +991,9 @@ Now play several chords in sequence without releasing: the long releases will ov
 - **Different harmonic color**: change Osc 2 waveform to Triangle for a softer, warmer pad.
 - **Detuning experiment**: increase **FINE** to `-15` cents for more obvious beating between the oscillators.
 
-> 🎓 **About wide stereo on pads.** The `WIDTH` parameter pans Osc 1 toward the left and Osc 2 toward the right. With Osc 1 = Saw and Osc 2 = Square, this means the left ear hears the saw character and the right ear hears the square character. The brain combines them into a single perceived sound that feels wider than either oscillator alone. This is a classic technique for pads: use stereo to enrich harmonic content, not just to spread a mono source.
+> 🎓 **About wide stereo on pads.** In Andes JX, WIDTH distributes voices across the stereo field according to the played note, using a layout inspired by the natural spatial distribution of a piano keyboard. In polyphonic chords, each voice occupies a slightly different position, creating a wide and organic stereo image rather than a simple artificial panning effect.  
+>
+> At high WIDTH values (`90–100 %`), pads gain an immersive, three-dimensional quality that works especially well for slow and atmospheric textures. The subtle spatial variation between voices prevents the sound from feeling rigid or overly centered, even when several notes sustain the same chord for long periods of time.
 
 ---
 
@@ -995,7 +1001,7 @@ Now play several chords in sequence without releasing: the long releases will ov
 
 ### What we're building
 
-A polyphonic acid-style lead with the Moog filter pushed into resonant territory, no keytracking, and a marked filter envelope on every note. Cotopaxi is the highest active stratovolcano in the world — the patch borrows its energy: sharp, rising, with character that cuts through.
+A polyphonic acid-style lead with the Moog filter pushed into highly resonant territory, no keytracking, and a pronounced filter envelope on every note. Cotopaxi is one of the highest and most dangerous active stratovolcanoes in the world — the patch borrows that energy: sharp, rising, and with a character that cuts through the mix.
 
 ### Step 1 — Start from Init
 
@@ -1156,15 +1162,24 @@ Each works well on its own. The point of starting here is to learn how each dest
 
 ### Combining destinations
 
-The interesting territory begins when you combine them.
+The interesting territory begins when you start combining modulation destinations.
 
-**Vibrato + filter wobble**: subtle vibrato (`+15 %`) plus subtle filter wobble (`10 %`) at the same LFO rate produces a sound that feels "alive" without any single modulation being obvious. The brain perceives unified breath rather than separate effects.
+In Andes JX, the LFO can simultaneously modulate:
 
-**Slow filter + slow PWM**: at very slow LFO rates (around `0.2 Hz`), simultaneous filter modulation and PWM make a pad evolve continuously. Each cycle of the LFO produces a slightly different timbre as both modulations interact.
+- **Pitch + filter** (vibrato + filter wobble)
+- **PWM + filter**
 
-**Fast vibrato + fast PWM**: at fast LFO rates (above `8 Hz`), vibrato + PWM together produce a tremulous, "synthetic chorus" effect. Useful for ethereal pads or science-fiction textures.
+But **pitch and PWM cannot be used at the same time**, because both share the same bipolar **PWM/VIB** knob: positive values enable vibrato, while negative values enable PWM.
 
-The key insight: **you only have one LFO**. All destinations move together at the same rate. This constraint is creative — it forces you to find rate values that work for all the destinations you've activated, which produces coherent modulation rather than competing rhythms.
+This means the instrument always forces you to choose between pitch-oriented modulation or pulse-width modulation, while keeping the filter as an independent third destination.
+
+**Vibrato + filter wobble**: subtle vibrato (`+15 %`) combined with gentle filter modulation (`10 %`) at the same LFO rate produces a sound that feels “alive” without any individual modulation becoming obvious. The brain perceives unified breath rather than separate effects.
+
+**Slow filter + slow PWM**: at very slow LFO rates (around `0.2 Hz`), combining filter modulation and PWM makes a pad evolve continuously. Each cycle produces a slightly different harmonic color as both modulations interact.
+
+**Fast PWM + fast filter wobble**: at high LFO rates (above `8 Hz`), the combination of PWM and filter modulation produces a tremulous, highly synthetic effect similar to an artificial chorus. Very useful for ethereal pads and science-fiction textures.
+
+The important idea is this: **you only have one LFO**. All active destinations move at the same rate. This limitation is deliberately creative — it forces you to find rates that work simultaneously for all active modulations, producing coherent movement rather than several modulations competing against each other.
 
 ### Choosing the LFO rate musically
 
@@ -1932,7 +1947,7 @@ The shape of an oscillator's output over time. Different waveforms have differen
 
 ### 12.2 This manual
 
-Written by **Jhonatan Guillermo López-Pilco**.
+Written by **Jhonatan López-Pilco**.
 
 **First edition**: May 2026.
 **Version covered**: Andes JX 1.0.
@@ -2042,5 +2057,3 @@ For news about NoiseRoomUIO, future plugin releases, and sound design content:
 **Developed in Quito, Ecuador — at 2,850 meters above sea level.**
 
 </div>
-
-[def]: C:\Users\Jhonatan\Desktop\NoiseRoomUIO\AndesProject\Andes-JX\Docs\screenshots
