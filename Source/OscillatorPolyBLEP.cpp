@@ -60,7 +60,7 @@
 //     lugar de [0, 2π)) simplifica las matemáticas de discontinuidad.
 float OscillatorPolyBLEP::advance()
 {
-    phase += frequency / sampleRate;
+    phase += phaseInc;
 
     if (phase >= 1.0f) {
         phase -= 1.0f;
@@ -139,6 +139,7 @@ void OscillatorPolyBLEP::prepare(double newSampleRate)
 void OscillatorPolyBLEP::setFrequency(float newFreq)
 {
     frequency = newFreq;
+    phaseInc = frequency / sampleRate;
 }
 
 

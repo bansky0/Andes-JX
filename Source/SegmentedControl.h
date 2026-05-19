@@ -20,7 +20,7 @@
             botones mutuamente excluyentes con apariencia de control
             segmentado redondeado (estilo iOS). Se usa en la UI de
             AndesJX para selectores discretos como forma de onda de
-            osciladores, tipo de filtro, modo de polifonía y modo de
+            osciladores, tipo de filtro, modo de polifonÃ­a y modo de
             glide.
 
     Main responsibilities:
@@ -37,10 +37,10 @@
           - Construir una fila de TextButtons que comparten un radio
             group, para que solo uno pueda estar seleccionado
           - Distribuirlos uniformemente a lo ancho del componente
-          - Pintar un único fondo redondeado y separadores entre
+          - Pintar un Ãºnico fondo redondeado y separadores entre
             botones que ocultan los marcos individuales
           - Exponer un callback simple onChange(int) ante cambios de
-            índice
+            Ã­ndice
           - Permitir aplicar un LookAndFeel custom uniformemente a
             todos los botones
 
@@ -50,11 +50,11 @@
             onChange to react in real time. The component itself is
             agnostic of which APVTS parameter it represents; the editor
             wires that connection.
-        ES: PluginEditor lo posee y lee el índice seleccionado vía
+        ES: PluginEditor lo posee y lee el Ã­ndice seleccionado vÃ­a
             getSelectedIndex() / getSelectedText(), o se suscribe a
             onChange para reaccionar en tiempo real. El componente en
-            sí no sabe qué parámetro APVTS representa; el editor cablea
-            esa conexión.
+            sÃ­ no sabe quÃ© parÃ¡metro APVTS representa; el editor cablea
+            esa conexiÃ³n.
 
     Notes:
         EN:
@@ -75,18 +75,18 @@
             optimizations.
         ES:
           - Se mantienen dos vectores paralelos (ownedButtons, buttons)
-            a propósito: el vector de unique_ptr es dueño de los
-            botones, el vector de punteros raw es el camino cómodo de
+            a propÃ³sito: el vector de unique_ptr es dueÃ±o de los
+            botones, el vector de punteros raw es el camino cÃ³modo de
             acceso indexado. Mantiene la API legible sin tener que
             usar .get() en todas partes.
-          - El paint() custom dibuja UN fondo redondeado más
+          - El paint() custom dibuja UN fondo redondeado mÃ¡s
             separadores verticales internos, en vez de dejar que cada
-            botón pinte su propio marco. Los botones en sí son
+            botÃ³n pinte su propio marco. Los botones en sÃ­ son
             transparentes y solo aportan su texto y su highlight de
             toggle.
           - Todos los botones viven dentro de un Component hijo
             buttonsContainer, no directamente sobre `this`. Esto
-            aísla el sub-árbol de botones para que el paint() del
+            aÃ­sla el sub-Ã¡rbol de botones para que el paint() del
             padre pueda dibujar por debajo sin interferir con las
             optimizaciones de repintado de JUCE.
 */
@@ -107,8 +107,8 @@ public:
     // EN: Sets a custom LookAndFeel that will be applied to every
     //     button currently in the control and to any future ones added
     //     by setItems(). Useful for matching the AndesJX visual style.
-    // ES: Asigna un LookAndFeel custom que se aplicará a cada botón
-    //     existente y a los que se añadan luego con setItems(). Útil
+    // ES: Asigna un LookAndFeel custom que se aplicarÃ¡ a cada botÃ³n
+    //     existente y a los que se aÃ±adan luego con setItems(). Ãštil
     //     para igualar el estilo visual de AndesJX.
     void setLookAndFeelForButtons(juce::LookAndFeel* laf)
     {
@@ -126,8 +126,8 @@ public:
     //     previous button cleanly through the unique_ptr vector.
     // ES: Reconstruye el control con una lista nueva de etiquetas. Cada
     //     etiqueta se convierte en un TextButton dentro de un radio
-    //     group compartido, así solo uno puede estar activo. Se
-    //     selecciona el primer ítem por defecto. Llamar esto sobre un
+    //     group compartido, asÃ­ solo uno puede estar activo. Se
+    //     selecciona el primer Ã­tem por defecto. Llamar esto sobre un
     //     control existente descarta todos los botones previos de
     //     manera limpia gracias al vector de unique_ptr.
     void setItems(const juce::StringArray& items, int radioGroupId)
@@ -145,8 +145,8 @@ public:
             //     un-toggles the rest automatically.
             // ES: Estado togglable + radio group hacen que los botones
             //     se comporten como un selector exclusivo nativo de
-            //     JUCE: al pulsar uno, los demás se des-togglean
-            //     automáticamente.
+            //     JUCE: al pulsar uno, los demÃ¡s se des-togglean
+            //     automÃ¡ticamente.
             button->setClickingTogglesState(true);
             button->setRadioGroupId(radioGroupId);
             button->setLookAndFeel(buttonLookAndFeel);
@@ -154,7 +154,7 @@ public:
             // EN: Capture `i` by value so each lambda remembers its own
             //     button index and can report it through onChange.
             // ES: Capturar `i` por valor para que cada lambda recuerde
-            //     su propio índice de botón y pueda reportarlo por
+            //     su propio Ã­ndice de botÃ³n y pueda reportarlo por
             //     onChange.
             auto* raw = button.get();
             raw->onClick = [this, i]()
@@ -175,9 +175,9 @@ public:
         // EN: Default selection: first segment, with no notification so
         //     the host does not see a spurious "user changed value"
         //     event during construction.
-        // ES: Selección por defecto: primer segmento, sin notificación
+        // ES: SelecciÃ³n por defecto: primer segmento, sin notificaciÃ³n
         //     para que el host no vea un evento espurio de "el usuario
-        //     cambió un valor" durante la construcción.
+        //     cambiÃ³ un valor" durante la construcciÃ³n.
         if (!buttons.empty())
         {
             buttons.front()->setToggleState(true, juce::dontSendNotification);
@@ -198,9 +198,9 @@ public:
     //     (e.g. APVTS sync) to avoid feedback loops; pass
     //     juce::sendNotification when you want listeners (onChange) to
     //     fire.
-    // ES: Selecciona un segmento programáticamente. Pasar
-    //     juce::dontSendNotification cuando el cambio viene del código
-    //     (p. ej. sync con APVTS) para evitar bucles de retroalimentación;
+    // ES: Selecciona un segmento programÃ¡ticamente. Pasar
+    //     juce::dontSendNotification cuando el cambio viene del cÃ³digo
+    //     (p. ej. sync con APVTS) para evitar bucles de retroalimentaciÃ³n;
     //     pasar juce::sendNotification cuando se desee que los
     //     listeners (onChange) se disparen.
     void setSelectedIndex(int newIndex,
@@ -237,9 +237,9 @@ public:
     // EN: Called by listeners (typically PluginEditor) whenever the
     //     selected index changes, either by user click or by
     //     programmatic setSelectedIndex with notification.
-    // ES: Lo invocan los listeners (típicamente PluginEditor) cuando
-    //     cambia el índice seleccionado, ya sea por clic del usuario o
-    //     por setSelectedIndex programático con notificación.
+    // ES: Lo invocan los listeners (tÃ­picamente PluginEditor) cuando
+    //     cambia el Ã­ndice seleccionado, ya sea por clic del usuario o
+    //     por setSelectedIndex programÃ¡tico con notificaciÃ³n.
     std::function<void(int)> onChange;
 
 
@@ -248,8 +248,8 @@ public:
     //     division, so the row always fills the full width without a
     //     visible gap on the right edge.
     // ES: Distribuye los botones uniformemente en el ancho disponible.
-    //     El último botón absorbe los píxeles sobrantes de la división
-    //     entera, así la fila llena el ancho completo sin un hueco
+    //     El Ãºltimo botÃ³n absorbe los pÃ­xeles sobrantes de la divisiÃ³n
+    //     entera, asÃ­ la fila llena el ancho completo sin un hueco
     //     visible en el borde derecho.
     void resized() override
     {
@@ -280,20 +280,20 @@ public:
     //     Each individual button is transparent (managed by the
     //     LookAndFeel) so the unified background shows through.
     // ES: Paint custom que da al control su apariencia estilo iOS:
-    //       - Un único fondo rectangular redondeado que cubre todos
+    //       - Un Ãºnico fondo rectangular redondeado que cubre todos
     //         los segmentos
-    //       - Un único contorno redondeado
+    //       - Un Ãºnico contorno redondeado
     //       - Separadores verticales finos entre segmentos
-    //     Cada botón individual es transparente (lo maneja el
-    //     LookAndFeel) para que el fondo unificado se vea a través.
+    //     Cada botÃ³n individual es transparente (lo maneja el
+    //     LookAndFeel) para que el fondo unificado se vea a travÃ©s.
     void paint(juce::Graphics& g) override
     {
         // EN: reduced(0.5f) shrinks the rectangle by half a pixel so
         //     the 1-pixel outline drawn afterwards stays inside the
         //     component's bounds (avoids clipping at the edges).
-        // ES: reduced(0.5f) achica el rectángulo medio píxel para que
-        //     el contorno de 1 píxel que se dibuja después quede
-        //     dentro de los límites del componente (evita el clipping
+        // ES: reduced(0.5f) achica el rectÃ¡ngulo medio pÃ­xel para que
+        //     el contorno de 1 pÃ­xel que se dibuja despuÃ©s quede
+        //     dentro de los lÃ­mites del componente (evita el clipping
         //     en los bordes).
         auto bounds = getLocalBounds().toFloat().reduced(0.5f);
 
@@ -316,8 +316,8 @@ public:
         //     The 1-pixel inset top and bottom keeps the separator
         //     from overlapping the outer border at the corners.
         // ES: Separadores internos entre segmentos. Se dibujan en el
-        //     borde izquierdo de cada botón a partir del segundo.
-        //     El inset de 1 píxel arriba y abajo evita que el
+        //     borde izquierdo de cada botÃ³n a partir del segundo.
+        //     El inset de 1 pÃ­xel arriba y abajo evita que el
         //     separador se superponga con el borde exterior en las
         //     esquinas.
         for (int i = 1; i < static_cast<int>(buttons.size()); ++i)
@@ -352,7 +352,7 @@ private:
     // EN: Parallel raw-pointer vector for indexed access. Always
     //     mirrors ownedButtons in size and order.
     // ES: Vector paralelo de punteros raw para acceso indexado.
-    //     Siempre refleja a ownedButtons en tamaño y orden.
+    //     Siempre refleja a ownedButtons en tamaÃ±o y orden.
     std::vector<juce::TextButton*> buttons;
 
     juce::LookAndFeel* buttonLookAndFeel = nullptr;
