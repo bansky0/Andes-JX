@@ -127,12 +127,51 @@ void OscillatorDPW::reset()
 {
     phase = 0.0f;
 
-    z1 = z2 = z3 = 0.0f;
-    sqZ1 = sqZ2 = sqZ3 = 0.0f;
-    pwZ1 = pwZ2 = pwZ3 = 0.0f;
-    triZ1 = 0.0f;
-}
+    // Prime DPW histories with phase-consistent previous samples.
+    // This avoids a large finite-difference impulse on note start.
 
+    const float p0 = phase;
+
+    auto sawPolyAt = [this](float p)
+        {
+            const float x = bipolarAt(wrap01(p));
+            return sawPolynomial4(x);
+        };
+
+    auto squarePolyAt = [this](float p)
+        {
+            const float xa = bipolarAt(wrap01(p));
+            const float xb = bipolarAt(wrap01(p + 0.5f));
+            return sawPolynomial4(xb) - sawPolynomial4(xa);
+        };
+
+    auto pwmPolyAt = [this](float p)
+        {
+            const float xa = bipolarAt(wrap01(p));
+            const float xb = bipolarAt(wrap01(p + (1.0f - pulseWidth)));
+            return sawPolynomial4(xb) - sawPolynomial4(xa);
+        };
+
+    auto triPolyAt = [this](float p)
+        {
+            const float x = bipolarAt(wrap01(p));
+            return x * (std::abs(x) - 1.0f);
+        };
+
+    z1 = sawPolyAt(p0 - phaseInc);
+    z2 = sawPolyAt(p0 - 2.0f * phaseInc);
+    z3 = sawPolyAt(p0 - 3.0f * phaseInc);
+
+    sqZ1 = squarePolyAt(p0 - phaseInc);
+    sqZ2 = squarePolyAt(p0 - 2.0f * phaseInc);
+    sqZ3 = squarePolyAt(p0 - 3.0f * phaseInc);
+
+    pwZ1 = pwmPolyAt(p0 - phaseInc);
+    pwZ2 = pwmPolyAt(p0 - 2.0f * phaseInc);
+    pwZ3 = pwmPolyAt(p0 - 3.0f * phaseInc);
+
+    triZ1 = triPolyAt(p0 - phaseInc);
+}
 
 // EN: Hard phase sync. Copies the other oscillator's phase AND all of its
 //     difference histories so both restart together and no click appears

@@ -1187,21 +1187,60 @@ void Synth::render(float** outputBuffers, int sampleCount)
                 if (!voice.env.isActive())
                     continue;
 
-                // EN: One-pole glide toward freqTarget. When
-                //     glideRateThisNote == 1.0 the voice snaps to the
-                //     target instantly (no glide). Lower values produce
-                //     a smooth portamento whose speed is independent of
-                //     the interval size (a musical choice: sliding one
-                //     octave feels as fast as sliding one semitone).
-                // ES: Glide de un polo hacia freqTarget. Cuando
-                //     glideRateThisNote == 1.0 la voz salta al objetivo
-                //     al instante (sin glide). Valores menores producen
-                //     un portamento suave cuya velocidad es
-                //     independiente del tamaño del intervalo (elección
-                //     musical: deslizar una octava se siente tan rápido
-                //     como deslizar un semitono).
-                voice.freqCurrent +=
-                    voice.glideRateThisNote * (voice.freqTarget - voice.freqCurrent);
+                // EN: One-pole glide toward freqTarget in the LOG-frequency
+                //     domain. Smoothing log(freq) (equivalently semitones)
+                //     rather than Hz is what makes the portamento musically
+                //     uniform: equal time per equal pitch distance, so
+                //     sliding one octave feels as fast as sliding one
+                //     semitone and up-slides feel symmetric to down-slides.
+                //     Smoothing Hz directly (the natural-looking one-pole)
+                //     would settle in equal Hz steps, which because pitch is
+                //     ~log(freq) crawls in the high register and rushes in
+                //     the low, and breaks up/down symmetry.
+                //
+                //     Derivation. A standard one-pole on log-frequency,
+                //         logF_new = logF + r * (logF_target - logF),
+                //     exponentiated on both sides simplifies to
+                //         freq_new = freq * (freqTarget / freq)^r,
+                //     which is what the code below computes -- one pow,
+                //     no log/exp calls, evaluated once per voice per LFO
+                //     step (not per sample).
+                //
+                //     With glideRateThisNote == 1.0, pow(ratio, 1) == ratio,
+                //     so freq_new == freqTarget exactly: the "no glide /
+                //     instant" path is preserved bit-for-bit, and presets
+                //     with glide off behave identically to before.
+                //     freqCurrent is always > 0 for an active voice (seeded
+                //     at note-on), so the ratio is well-defined.
+                //
+                // ES: Glide de un polo hacia freqTarget en el dominio LOG
+                //     de la frecuencia. Suavizar log(freq) (equivalente a
+                //     semitonos) en vez de Hz es lo que hace el portamento
+                //     musicalmente uniforme: igual tiempo por igual
+                //     distancia de altura, así deslizar una octava se siente
+                //     tan rápido como deslizar un semitono y los glides
+                //     ascendentes se sienten simétricos a los descendentes.
+                //     Suavizar directamente Hz (el polo de aspecto natural)
+                //     se asentaría en pasos iguales de Hz, lo que por ser la
+                //     altura ~log(freq) se arrastra en el registro agudo y
+                //     se apresura en el grave, y rompe la simetría subir/bajar.
+                //
+                //     Derivación. Un polo estándar sobre log-frecuencia,
+                //         logF_new = logF + r * (logF_target - logF),
+                //     exponenciado en ambos lados se simplifica a
+                //         freq_new = freq * (freqTarget / freq)^r,
+                //     que es lo que calcula el código de abajo -- una pow,
+                //     sin llamadas a log/exp, evaluada una vez por voz por
+                //     paso de LFO (no por muestra).
+                //
+                //     Con glideRateThisNote == 1.0, pow(ratio, 1) == ratio,
+                //     así freq_new == freqTarget exacto: la rama "sin glide
+                //     / instantáneo" se preserva bit a bit y los presets
+                //     con glide apagado se comportan idéntico que antes.
+                //     freqCurrent siempre es > 0 para una voz activa
+                //     (sembrado en note-on), así la razón está bien definida.
+                const float ratio = voice.freqTarget / voice.freqCurrent;
+                voice.freqCurrent *= std::pow(ratio, voice.glideRateThisNote);
 
                 // EN: Apply pitch bend and vibrato (multiplicative) to
                 //     the oscillator frequencies. osc2 additionally
@@ -1224,7 +1263,8 @@ void Synth::render(float** outputBuffers, int sampleCount)
                 //       1. Base cutoff with CC74 brightness boost (x1..x3)
                 //       2. Apply key tracking from the preset.
                 //       3. Apply the smoothed semitone offset (filterZipSemis)
-                //          which already combines CC74/75 + aftertouch + LFO.
+                //          plus the per-voice filter envelope contribution
+                //          (both in semitones, then a single exp2 to Hz).
                 //       4. Compensate for pitch bend (classic JX detail:
                 //          bend up also brightens the sound slightly).
                 //       5. Clamp to a safe range before handing it to the filter.
@@ -1237,8 +1277,9 @@ void Synth::render(float** outputBuffers, int sampleCount)
                 //       1. Cutoff base con realce de brightness CC74 (x1..x3)
                 //       2. Aplicar key tracking del preset.
                 //       3. Aplicar el offset en semitonos ya suavizado
-                //          (filterZipSemis), que combina CC74/75 +
-                //          aftertouch + LFO.
+                //          (filterZipSemis) más la contribución por voz de
+                //          la envolvente de filtro (ambos en semitonos, luego
+                //          un único exp2 a Hz).
                 //       4. Compensar pitch bend (detalle clásico del JX:
                 //          hacer bend hacia arriba también abre un poco
                 //          el sonido).
@@ -1252,7 +1293,10 @@ void Synth::render(float** outputBuffers, int sampleCount)
                 float baseCutoff = filterCutoff * (1.0f + 2.0f * cc.brightness);
                 float cutoffHz = calculateKeyTrackedCutoff(voice.note, baseCutoff);
 
-                cutoffHz *= std::exp2(filterZipSemis / 12.0f);
+                const float envSemis = voice.filterEnvValue
+                    * filterEnvAmountSemis
+                    * voice.filterEnvDepthMultiplier;
+                cutoffHz *= std::exp2((filterZipSemis + envSemis) / 12.0f);
                 cutoffHz /= pitchBend;
                 cutoffHz = std::clamp(cutoffHz, 80.0f, 0.45f * sampleRate);
 
@@ -1356,103 +1400,103 @@ void Synth::render(float** outputBuffers, int sampleCount)
                     ------------------------------------------------------------
                 */
             }
-}  // EN: end of LFO-rate update  |  ES: fin del update al ritmo del LFO
+        }  // EN: end of LFO-rate update  |  ES: fin del update al ritmo del LFO
+
+
+                // --------------------------------------------------------------------
+                //  Per-sample stereo summing / Suma estéreo por muestra
+                // --------------------------------------------------------------------
+
+                // EN: One noise sample shared by all voices. This is cheaper
+                //     than per-voice noise and, more importantly, produces a
+                //     unified noise texture instead of multiple uncorrelated
+                //     streams.
+                // ES: Una muestra de ruido compartida por todas las voces. Más
+                //     barato que tener ruido por voz y, sobre todo, produce una
+                //     textura de ruido unificada en vez de varios streams no
+                //     correlacionados.
+        const float noise = noiseGen.nextValue() * noiseMix;
+
+        float outL = 0.0f;
+        float outR = 0.0f;
+
+        // EN: Sum the active voices into the stereo buses using each
+        //     voice's pre-computed pan gains.
+        // ES: Sumar las voces activas en los buses estéreo usando las
+        //     ganancias de paneo precalculadas por voz.
+        for (int v = 0; v < MAX_VOICES; ++v)
+        {
+            Voice& voice = voices[v];
+            if (voice.env.isActive())
+            {
+                const float mono = voice.render(noise, pwmDepth > 0.0f);
+                outL += mono * voice.panLeft;
+                outR += mono * voice.panRight;
+            }
+        }
 
 
         // --------------------------------------------------------------------
-        //  Per-sample stereo summing / Suma estéreo por muestra
+        //  Output gain, expression and soft clip
+        //  Ganancia de salida, expression y soft clip
         // --------------------------------------------------------------------
 
-        // EN: One noise sample shared by all voices. This is cheaper
-        //     than per-voice noise and, more importantly, produces a
-        //     unified noise texture instead of multiple uncorrelated
-        //     streams.
-        // ES: Una muestra de ruido compartida por todas las voces. Más
-        //     barato que tener ruido por voz y, sobre todo, produce una
-        //     textura de ruido unificada en vez de varios streams no
-        //     correlacionados.
-const float noise = noiseGen.nextValue() * noiseMix;
+        // EN: Smoothed master output level (avoids zipper noise).
+        // ES: Nivel maestro de salida suavizado (evita zipper noise).
+        const float gain = outputLevelSmoother.getNextValue();
+        outL *= gain;
+        outR *= gain;
 
-float outL = 0.0f;
-float outR = 0.0f;
+        // EN: CC11 Expression. Quadratic curve (x^2) gives finer control
+        //     in the low range, which is the standard pedal feel.
+        //     Expression is applied per-sample on top of the output gain
+        //     because it is a real-time performance control.
+        // ES: CC11 Expression. Curva cuadrática (x^2) da control más fino
+        //     en el rango bajo, que es la sensación estándar del pedal.
+        //     Se aplica por muestra encima de la ganancia de salida
+        //     porque es un control de interpretación en tiempo real.
+        float expr = cc.expression;
+        expr = expr * expr;
+        outL *= expr;
+        outR *= expr;
 
-// EN: Sum the active voices into the stereo buses using each
-//     voice's pre-computed pan gains.
-// ES: Sumar las voces activas en los buses estéreo usando las
-//     ganancias de paneo precalculadas por voz.
-for (int v = 0; v < MAX_VOICES; ++v)
-{
-    Voice& voice = voices[v];
-    if (voice.env.isActive())
-    {
-        const float mono = voice.render(noise, pwmDepth > 0.0f);
-        outL += mono * voice.panLeft;
-        outR += mono * voice.panRight;
-    }
-}
+        // EN: Soft-clip stage. The rational function  x / (1 + |x|)
+        //     smoothly saturates as |x| grows: it equals x for small
+        //     inputs, asymptotes to +/-1 for large inputs, and is
+        //     monotonic and continuous. Cheaper than tanh and perceptually
+        //     similar in this role. volumeTrim drives the saturator.
+        // ES: Etapa de soft-clip. La función racional  x / (1 + |x|)
+        //     satura suavemente al crecer |x|: vale x en entradas
+        //     pequeñas, tiende a +/-1 en entradas grandes, es monótona
+        //     y continua. Más barata que tanh y perceptualmente similar
+        //     en este rol. volumeTrim alimenta al saturador.
+        const float driveL = outL * volumeTrim;
+        const float driveR = outR * volumeTrim;
 
-
-// --------------------------------------------------------------------
-//  Output gain, expression and soft clip
-//  Ganancia de salida, expression y soft clip
-// --------------------------------------------------------------------
-
-// EN: Smoothed master output level (avoids zipper noise).
-// ES: Nivel maestro de salida suavizado (evita zipper noise).
-const float gain = outputLevelSmoother.getNextValue();
-outL *= gain;
-outR *= gain;
-
-// EN: CC11 Expression. Quadratic curve (x^2) gives finer control
-//     in the low range, which is the standard pedal feel.
-//     Expression is applied per-sample on top of the output gain
-//     because it is a real-time performance control.
-// ES: CC11 Expression. Curva cuadrática (x^2) da control más fino
-//     en el rango bajo, que es la sensación estándar del pedal.
-//     Se aplica por muestra encima de la ganancia de salida
-//     porque es un control de interpretación en tiempo real.
-float expr = cc.expression;
-expr = expr * expr;
-outL *= expr;
-outR *= expr;
-
-// EN: Soft-clip stage. The rational function  x / (1 + |x|)
-//     smoothly saturates as |x| grows: it equals x for small
-//     inputs, asymptotes to +/-1 for large inputs, and is
-//     monotonic and continuous. Cheaper than tanh and perceptually
-//     similar in this role. volumeTrim drives the saturator.
-// ES: Etapa de soft-clip. La función racional  x / (1 + |x|)
-//     satura suavemente al crecer |x|: vale x en entradas
-//     pequeñas, tiende a +/-1 en entradas grandes, es monótona
-//     y continua. Más barata que tanh y perceptualmente similar
-//     en este rol. volumeTrim alimenta al saturador.
-const float driveL = outL * volumeTrim;
-const float driveR = outR * volumeTrim;
-
-outL = driveL / (1.0f + std::abs(driveL));
-outR = driveR / (1.0f + std::abs(driveR));
+        outL = driveL / (1.0f + std::abs(driveL));
+        outR = driveR / (1.0f + std::abs(driveR));
 
 
-// --------------------------------------------------------------------
-//  Write to output buffers / Escritura a los buffers de salida
-// --------------------------------------------------------------------
+        // --------------------------------------------------------------------
+        //  Write to output buffers / Escritura a los buffers de salida
+        // --------------------------------------------------------------------
 
-// EN: If the host expects stereo (both pointers valid), write L/R
-//     separately. If mono (right buffer null), collapse to the
-//     midpoint. This keeps the plugin usable in mono chains.
-// ES: Si el host espera estéreo (ambos punteros válidos), escribir
-//     L/R por separado. Si es mono (puntero derecho null),
-//     colapsar al punto medio. Así el plugin sigue siendo usable
-//     en cadenas mono.
-if (outputBufferRight != nullptr)
-{
-    outputBufferLeft[sample] = outL;
-    outputBufferRight[sample] = outR;
-}
-else
-{
-    outputBufferLeft[sample] = 0.5f * (outL + outR);
-}
+        // EN: If the host expects stereo (both pointers valid), write L/R
+        //     separately. If mono (right buffer null), collapse to the
+        //     midpoint. This keeps the plugin usable in mono chains.
+        // ES: Si el host espera estéreo (ambos punteros válidos), escribir
+        //     L/R por separado. Si es mono (puntero derecho null),
+        //     colapsar al punto medio. Así el plugin sigue siendo usable
+        //     en cadenas mono.
+        if (outputBufferRight != nullptr)
+        {
+            outputBufferLeft[sample] = outL;
+            outputBufferRight[sample] = outR;
+        }
+        else
+        {
+            outputBufferLeft[sample] = 0.5f * (outL + outR);
+        }
     }
 
 
@@ -1789,6 +1833,7 @@ void Synth::setFilterType(FilterType type)
         }
 
         voice.filter->setSampleRate(sampleRate);
-        voice.filter->reset();
+        if (!voice.env.isActive())
+            voice.filter->reset();
     }
 }

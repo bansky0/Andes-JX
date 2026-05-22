@@ -1918,7 +1918,17 @@ juce::AudioProcessorValueTreeState::ParameterLayout AndesJXAudioProcessor::creat
         "Filter Type",
         juce::StringArray{ "SVF", "Moog" },
         1));
-
+    // EN: Filter cutoff knob. Exposed as a percentage [0, 100] but
+    //     mapped logarithmically to [80 Hz, 20 kHz] in updateParameters
+    //     (equal knob movement -> equal pitch movement). The "%" label
+    //     reflects the raw parameter; the actual frequency range is
+    //     stated here and in the user manual.
+    // ES: Knob de cutoff del filtro. Se expone como porcentaje
+    //     [0, 100] pero se mapea logarítmicamente a [80 Hz, 20 kHz]
+    //     en updateParameters (igual movimiento de knob -> igual
+    //     movimiento de altura). La etiqueta "%" refleja el parámetro
+    //     crudo; el rango real en frecuencia se documenta aquí y en
+    //     el manual del usuario.
     layout.add(std::make_unique<juce::AudioParameterFloat>(
         ParameterID::filterFreq,
         "Filter Freq",

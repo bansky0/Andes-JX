@@ -189,7 +189,12 @@ public:
     // --- Filter / Filtro ---------------------------------------------------
 
     // EN: Base filter cutoff in Hz, before key tracking and modulation.
-    // ES: Cutoff base del filtro en Hz, antes de key tracking y modulación.
+    //     Typical range: 80 Hz – 20 kHz, set by PluginProcessor from
+    //     the filterFreq parameter (logarithmic mapping).
+    // ES: Cutoff base del filtro en Hz, antes de key tracking y
+    //     modulación. Rango típico: 80 Hz – 20 kHz, fijado por
+    //     PluginProcessor desde el parámetro filterFreq (mapeo
+    //     logarítmico).
     float filterCutoff = 5000.0f;
 
     // EN: Normalized filter resonance in [0, 1]. The active filter wrapper
