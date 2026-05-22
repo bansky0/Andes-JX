@@ -294,14 +294,19 @@ This zone is where you save and recall sounds, and where you set the final outpu
 
 ### Reading values
 
-All knobs in Andes JX show their current value either inside the knob (the four headline knobs: MIX, CUTOFF, RESO, OUTPUT) or as a small label just above the knob (the secondary knobs). Values appear in their natural units:
+All knobs in Andes JX show their current value either inside the knob (the four headline knobs: MIX, CUTOFF, RESO, OUTPUT) or as a small label just above the knob (the secondary knobs). Three display conventions are used, depending on the parameter:
 
-- **Percentages** (`%`) for normalized parameters like noise amount or filter resonance.
-- **Decibels** (`dB`) for the output level.
-- **Semitones** (`st`) for pitch parameters.
+**Knobs that show a true physical unit:**
+
+- **Decibels** (`dB`) for the OUTPUT level.
+- **Semitones** (`st`) for pitch parameters (oscillator tune, octave).
 - **Cents** (`c`) for fine-tuning.
 - **Hertz** (`Hz`) for the LFO rate.
 - **Note names** (`C4`, `A#3`, etc.) for the filter key center.
+
+**Knobs that are naturally a percentage** because they control a normalized amount with no other underlying unit: NOISE, MIX, RESONANCE, sustain levels, and the bipolar amount knobs (ENV AMT, VEL FLTR, PWM/VIB, VCF MOD, KEY TRCK).
+
+**Knobs that are exposed as a percentage but map internally to a non-linear range** (logarithmic frequency or exponential time): CUTOFF, GLIDE RATE, and all envelope stages (A/D/R). On these, the percentage shows the *position of the knob*, not the underlying physical value. The actual range and mapping is documented per parameter in section 5 of this manual — for example, CUTOFF shows `75 %` on the GUI but maps to roughly `5 kHz` (see section 5.2).
 
 Bipolar parameters always show their sign (`+25 %`, `-50 %`) so you immediately know which side of zero you are on.
 
@@ -438,15 +443,17 @@ The Init preset starts with the **Moog filter** so the first touch of Andes JX i
 
 ### CUTOFF
 
-`Range: 0–100 %` · `Step: 0.1` · `Maps to: ~30 Hz–20 kHz logarithmic` · `Default: 75 %`
+`Range: 0–100 %` · `Step: 0.1` · `Maps to: 80 Hz – 20 kHz logarithmic` · `Default: 75 %`
 
 The most important knob of the filter section. Sets the corner frequency of the filter — the point above which high frequencies start to be removed.
 
-The mapping is logarithmic (matching how human hearing perceives frequency), which means a small movement near the bottom of the range produces a dramatic tonal change, while the same movement near the top has a subtle effect.
+The mapping is logarithmic so that equal movements of the knob produce equal *perceived* changes in brightness, regardless of where you are on the dial. A small move near the bottom of the range produces what sounds like the same step as a much larger move in Hz near the top.
 
 The default of `75 %` keeps the filter partially closed, leaving room for the filter envelope to open and close the cutoff musically. With a fully open filter (`100 %`), the envelope's effect on cutoff would be barely audible.
 
 > 💡 **Tip**: Most musically useful filtering happens between `20–70 %`. Below `10 %` the sound becomes very dark or disappears completely; above `90 %` the filter is essentially open and you barely hear its effect.
+
+> 🎓 **About the logarithmic cutoff mapping.** Human pitch perception is approximately logarithmic: every octave is a doubling of frequency, but the ear hears each octave as an equal step. The exponential mapping of CUTOFF matches this perception — going from `25 %` to `50 %` on the knob raises the cutoff by the same number of octaves as going from `50 %` to `75 %`. Without this mapping, the most musical region of the filter (a few hundred Hz to a few kHz, where most timbre lives) would be crammed into a tiny portion of the knob's travel and the upper end would feel useless. The exact formula used internally is `Hz = 80 × 250^(position)`, where `position` is the knob normalized to `0–1`, which spans `80 Hz` at the bottom to `20 kHz` at the top. The same exponential principle is applied to LFO RATE and to the envelope time knobs (see section 5.3) for the same perceptual reason.
 
 ### RESO — Resonance
 
@@ -465,17 +472,19 @@ The default of `15 %` adds a touch of character to the Init preset without cross
 
 ### ENV AMT — Filter envelope amount
 
-`Range: -100 to +100 %` · `Step: 0.1` · `Default: 50 %` · `Bipolar`
+`Range: -100 to +100 %` · `Step: 0.1` · `Maps to: ±48 semitones (±4 octaves)` · `Default: 50 %` · `Bipolar`
 
-Sets how much the filter envelope (configured in section 5.3) modulates the cutoff frequency over time. This is what makes filter sweeps possible.
+Sets how much the filter envelope (configured in section 5.3) modulates the cutoff frequency over time. This is what makes filter sweeps possible. At maximum settings the envelope can move the cutoff up or down by four full octaves from its resting position.
 
 - **Positive values** open the filter when a note is played, then close it as the envelope decays.
 - **Negative values** close the filter on attack and open it as the envelope decays — a less common but interesting effect for percussive sounds.
 - **Zero** means the filter envelope has no effect on the cutoff (the envelope still runs internally, just with no audible result).
 
-The default of `+50 %` gives the Init preset its characteristic filter sweep on every note.
+The default of `+50 %` gives the Init preset its characteristic filter sweep on every note, equivalent to a modulation depth of roughly two octaves.
 
 > 💡 **Tip**: For plucks and bass, try ENV AMT at `+30 to +60 %` with a fast decay envelope. For pads, lower values (`+10 to +20 %`) produce a subtle filter movement that adds life without being obvious.
+
+> 🎓 **Modulation lives in the semitone domain.** ENV AMT is not measured in Hz of cutoff offset — it is measured in **semitones**. The envelope shape moves the cutoff up or down in *pitch* steps, not in *frequency* steps. This matches how the rest of the modulation network in Andes JX works: the LFO modulation to cutoff (VCF MOD), velocity-to-filter (VEL FLTR), key tracking (KEY TRCK) and aftertouch are all expressed in semitones, summed together, and then converted to Hz only at the very last step. The advantage is musical consistency: a "two octaves up" envelope sweep feels the same whether your CUTOFF knob is at `30 %` or `70 %`, because the operation is in the pitch domain where the ear perceives equal steps.
 
 ### KEY TRCK — Keyboard tracking
 
@@ -588,8 +597,11 @@ The envelopes in Andes JX use **analog-style curves** rather than perfectly line
 
 This non-linear shape mimics how analog envelope generators behave and produces a more musical, organic feel than mathematically linear envelopes.
 
+The time range covered by each stage knob spans **from roughly 4 ms (knob at 0) to 7.4 seconds (knob at 100)**. The mapping is exponential, just like CUTOFF and LFO RATE: equal knob movement produces equal *perceived* changes in time, even though the underlying milliseconds change by a much larger factor near the top. The middle of the knob (around `50 %`) corresponds to roughly `170 ms`, a typical "audible but not slow" envelope stage. The same mapping is shared by both the amplitude and the filter envelopes.
+
 > 💡 **Tip**: Because of the exponential nature, very short envelope times (below `10 %`) produce dramatic, snappy responses. Long times (above `70 %`) produce slow, gradual changes. The middle of the range (`30–60 %`) covers most musical scenarios.
 
+> 🎓 **Two layers of exponential.** The envelopes in Andes JX are exponential in two distinct ways, and it is worth telling them apart. First, the *time knob* is exponential: equal knob steps give equal multiplicative steps in time (10 ms → 100 ms → 1 s feels like equal increments). Second, the *envelope shape itself* is exponential: once a stage starts, the level approaches its target geometrically, like a capacitor charging or discharging in an analog circuit. Both choices are deliberate. The exponential knob covers the huge dynamic range from snappy plucks to slow pads without dead zones. The exponential shape mimics analog hardware and, for the amplitude envelope specifically, matches our logarithmic perception of loudness — an exponential decay in amplitude is *heard* as a smooth, linear-feeling fade in volume.
 
 ### 5.4 Modulation
 
@@ -652,7 +664,16 @@ Selects when glide (portamento) is applied between notes:
 
 Sets the speed of the glide between two notes. At `0 %` the glide is instantaneous (effectively no glide); at higher values the glide is slower.
 
+The glide is computed in the **logarithmic frequency domain** (in semitones), not in Hz. Two important consequences follow:
+
+- A one-octave slide and a one-semitone slide take a time proportional to the GLIDE RATE — they *feel the same speed* regardless of the interval size.
+- Sliding up and sliding down across the same musical interval are perfectly symmetric in duration and trajectory.
+
+This matches the way a human voice or a fretless instrument moves between notes, and is the reason why the glide in Andes JX sounds musically natural across the entire keyboard.
+
 > 💡 **Tip**: For musical glide on bass and lead lines, values between `20–50 %` work well. Above `70 %` the glide becomes very slow and starts feeling like a deliberate slide effect rather than a smooth note transition.
+
+> 🎓 **Why log-domain glide matters.** A naive glide implementation smooths the *frequency in Hz* with a simple low-pass filter. It looks correct on paper but sounds wrong on an instrument: because pitch perception is logarithmic, sliding from `100 Hz` to `200 Hz` (one octave) covers the same perceived distance as sliding from `1000 Hz` to about `1100 Hz` (only ~1.6 semitones), but a naive Hz-domain filter would take the same time for both. The result is a portamento that *rushes* in the bass register and *crawls* in the treble, and that feels asymmetric depending on whether the slide goes up or down. Smoothing the *logarithm* of the frequency instead — equivalently, smoothing in semitones — produces a glide where equal time means equal pitch travel, in both directions. This is one of the small but defining differences between a portamento that "feels right" and one that "feels off".
 
 ### GLIDE BEND
 

@@ -305,14 +305,19 @@ Esta zona es donde guardas y recuperas sonidos, y donde defines el nivel final d
 
 ### Lectura de valores
 
-Todos los knobs de Andes JX muestran su valor actual, ya sea dentro del knob (los cuatro knobs principales: **MIX**, **CUTOFF**, **RESO** y **OUTPUT**) o mediante una pequeña etiqueta ubicada sobre el control (knobs secundarios). Los valores se muestran utilizando sus unidades naturales:
+Todos los knobs de Andes JX muestran su valor actual, ya sea dentro del knob (los cuatro knobs principales: **MIX**, **CUTOFF**, **RESO** y **OUTPUT**) o mediante una pequeña etiqueta ubicada sobre el control (knobs secundarios). Se utilizan tres convenciones de display, según el parámetro:
 
-- **Porcentajes** (`%`) para parámetros normalizados como cantidad de ruido o resonancia del filtro.
-- **Decibeles** (`dB`) para el nivel de salida.
-- **Semitonos** (`st`) para parámetros de afinación.
+**Knobs que muestran una unidad física real:**
+
+- **Decibeles** (`dB`) para el nivel de OUTPUT.
+- **Semitonos** (`st`) para parámetros de afinación (tune del oscilador, octava).
 - **Cents** (`c`) para afinación fina.
 - **Hertz** (`Hz`) para la velocidad del LFO.
 - **Nombres de nota** (`C4`, `A#3`, etc.) para el *filter key center*.
+
+**Knobs cuyo valor es naturalmente un porcentaje** porque controlan una cantidad normalizada sin otra unidad subyacente: NOISE, MIX, RESONANCIA, niveles de sustain y los knobs bipolares de cantidad (ENV AMT, VEL FLTR, PWM/VIB, VCF MOD, KEY TRCK).
+
+**Knobs expuestos como porcentaje pero que internamente se mapean a un rango no lineal** (frecuencia logarítmica o tiempo exponencial): CUTOFF, GLIDE RATE y todas las etapas de envolvente (A/D/R). En estos, el porcentaje muestra la *posición del knob*, no el valor físico subyacente. El rango real y el mapeo están documentados parámetro por parámetro en la sección 5 de este manual — por ejemplo, CUTOFF muestra `75 %` en la GUI pero se mapea a aproximadamente `5 kHz` (ver sección 5.2).
 
 Los parámetros bipolares muestran siempre su signo (`+25 %`, `-50 %`) para que puedas identificar inmediatamente de qué lado del cero se encuentra el valor.
 
@@ -448,15 +453,17 @@ El preset Init comienza utilizando el **filtro Moog**, de modo que el primer con
 
 ### CUTOFF
 
-`Rango: 0–100 %` · `Paso: 0.1` · `Mapea a: ~30 Hz–20 kHz logarítmico` · `Por defecto: 75 %`
+`Rango: 0–100 %` · `Paso: 0.1` · `Mapea a: 80 Hz – 20 kHz logarítmico` · `Por defecto: 75 %`
 
 El knob más importante de la sección Filter. Define la frecuencia de corte del filtro: el punto a partir del cual las frecuencias altas comienzan a ser atenuadas.
 
-El mapeo es logarítmico (siguiendo la forma en que el oído humano percibe la frecuencia), lo que significa que pequeños movimientos en la parte baja del rango producen cambios tonales dramáticos, mientras que el mismo movimiento en la parte alta genera cambios más sutiles.
+El mapeo es logarítmico de modo que movimientos iguales del knob produzcan cambios iguales en la brillantez *percibida*, sin importar en qué parte del recorrido te encuentres. Un movimiento pequeño cerca de la parte baja del rango se escucha como un paso del mismo tamaño que un movimiento mucho mayor en Hz cerca de la parte alta.
 
 El valor por defecto de `75 %` mantiene el filtro parcialmente cerrado, dejando espacio para que la envolvente abra y cierre el cutoff de forma musical. Con el filtro completamente abierto (`100 %`), el efecto de la envolvente sobre el cutoff sería casi imperceptible.
 
 > 💡 **Tip**: La mayor parte del rango musicalmente útil del filtro se encuentra entre `20–70 %`. Por debajo de `10 %`, el sonido se vuelve extremadamente oscuro o desaparece casi por completo; por encima de `90 %`, el filtro está prácticamente abierto y su efecto es mínimo.
+
+> 🎓 **Sobre el mapeo logarítmico del cutoff.** La percepción humana de la altura es aproximadamente logarítmica: cada octava es una duplicación de la frecuencia, pero el oído escucha cada octava como un paso del mismo tamaño. El mapeo exponencial de CUTOFF refleja esta percepción — pasar del `25 %` al `50 %` del knob eleva el cutoff la misma cantidad de octavas que pasar del `50 %` al `75 %`. Sin este mapeo, la región más musical del filtro (unos cientos de Hz a unos pocos kHz, donde vive la mayor parte del timbre) quedaría aplastada en una porción mínima del recorrido del knob, y el extremo superior se sentiría inservible. La fórmula utilizada internamente es `Hz = 80 × 250^(position)`, donde `position` es el knob normalizado a `0–1`, cubriendo desde `80 Hz` en el extremo inferior hasta `20 kHz` en el superior. El mismo principio exponencial se aplica a LFO RATE y a los knobs de tiempo de las envolventes (ver sección 5.3) por la misma razón perceptual.
 
 ### RESO — Resonancia
 
@@ -475,17 +482,19 @@ El valor por defecto de `15 %` añade un poco de carácter al preset Init sin en
 
 ### ENV AMT — Cantidad de envolvente del filtro
 
-`Rango: -100 a +100 %` · `Paso: 0.1` · `Por defecto: 50 %` · `Bipolar`
+`Rango: -100 a +100 %` · `Paso: 0.1` · `Mapea a: ±48 semitonos (±4 octavas)` · `Por defecto: 50 %` · `Bipolar`
 
-Define cuánto la envolvente del filtro (configurada en la sección 5.3) modula la frecuencia de cutoff a lo largo del tiempo. Este parámetro es lo que hace posibles los barridos de filtro.
+Define cuánto la envolvente del filtro (configurada en la sección 5.3) modula la frecuencia de cutoff a lo largo del tiempo. Este parámetro es lo que hace posibles los barridos de filtro. En sus valores extremos, la envolvente puede mover el cutoff hasta cuatro octavas hacia arriba o hacia abajo desde su posición de reposo.
 
 - **Valores positivos** abren el filtro al tocar una nota y luego lo cierran mientras la envolvente decae.
 - **Valores negativos** cierran el filtro durante el ataque y lo abren a medida que la envolvente decae; menos común, pero interesante para sonidos percusivos.
 - **Cero** significa que la envolvente no afecta el cutoff (la envolvente sigue funcionando internamente, solo que sin efecto audible).
 
-El valor por defecto de `+50 %` es el responsable del barrido característico del filtro en el preset Init.
+El valor por defecto de `+50 %` es el responsable del barrido característico del filtro en el preset Init, equivalente a una profundidad de modulación de aproximadamente dos octavas.
 
 > 💡 **Tip**: Para plucks y basses, prueba ENV AMT entre `+30 y +60 %` con un decay rápido. Para pads, valores más bajos (`+10 a +20 %`) generan un movimiento sutil del filtro que añade vida sin resultar evidente.
+
+> 🎓 **La modulación vive en el dominio de los semitonos.** ENV AMT no se mide en Hz de desplazamiento de cutoff, sino en **semitonos**. La forma de la envolvente mueve el cutoff hacia arriba o abajo en pasos de *altura*, no en pasos de *frecuencia*. Esto es coherente con el resto de la red de modulación de Andes JX: la modulación de LFO al cutoff (VCF MOD), la modulación por velocidad (VEL FLTR), el key tracking (KEY TRCK) y el aftertouch están todos expresados en semitonos, se suman entre sí y solo al final se convierten en Hz. La ventaja es consistencia musical: un barrido de envolvente "dos octavas hacia arriba" se siente igual estés con CUTOFF en `30 %` o en `70 %`, porque la operación ocurre en el dominio de la altura, donde el oído percibe pasos iguales.
 
 ### KEY TRCK — Keyboard tracking
 
@@ -598,7 +607,11 @@ Las envolventes de Andes JX utilizan **curvas estilo analógico** en lugar de ra
 
 Esta forma no lineal imita el comportamiento de los generadores de envolvente analógicos y produce una sensación más musical y orgánica que las envolventes matemáticamente lineales.
 
+El rango de tiempo cubierto por cada knob de etapa abarca **aproximadamente desde 4 ms (knob en 0) hasta 7.4 segundos (knob en 100)**. El mapeo es exponencial, igual que en CUTOFF y LFO RATE: movimientos iguales del knob producen cambios iguales en el tiempo *percibido*, aunque los milisegundos subyacentes cambien por un factor mucho mayor en la parte alta. La zona central del knob (alrededor del `50 %`) corresponde a aproximadamente `170 ms`, una duración típica de "audible pero no lenta" para una etapa de envolvente. El mismo mapeo se comparte entre la envolvente de amplitud y la envolvente del filtro.
+
 > 💡 **Tip**: Debido a su naturaleza exponencial, tiempos muy cortos de envolvente (por debajo de `10 %`) producen respuestas rápidas y agresivas. Tiempos largos (por encima de `70 %`) generan cambios lentos y graduales. La zona media (`30–60 %`) cubre la mayoría de escenarios musicales.
+
+> 🎓 **Dos capas de exponencial.** Las envolventes de Andes JX son exponenciales de dos maneras distintas, y vale la pena distinguirlas. Primero, el *knob de tiempo* es exponencial: pasos iguales del knob dan pasos iguales multiplicativos en tiempo (10 ms → 100 ms → 1 s se siente como incrementos iguales). Segundo, *la forma de la envolvente misma* es exponencial: una vez que arranca una etapa, el nivel se aproxima a su destino geométricamente, como un capacitor cargándose o descargándose en un circuito analógico. Ambas decisiones son deliberadas. El knob exponencial cubre el enorme rango dinámico desde plucks rápidos hasta pads lentos sin zonas muertas. La forma exponencial imita el hardware analógico y, en el caso de la envolvente de amplitud, coincide con nuestra percepción logarítmica de la sonoridad — una caída exponencial en amplitud se *escucha* como un fade suave y lineal en volumen.
 
 ### 5.4 Modulation
 
@@ -661,7 +674,16 @@ Define cuándo se aplica glide (portamento) entre notas:
 
 Define la velocidad del glide entre dos notas. En `0 %`, el glide es prácticamente instantáneo (equivalente a no tener glide); en valores altos, la transición se vuelve más lenta.
 
+El glide se calcula en el **dominio logarítmico de la frecuencia** (en semitonos), no en Hz. De ahí se desprenden dos consecuencias importantes:
+
+- Un deslizamiento de una octava y uno de un semitono toman un tiempo proporcional a GLIDE RATE — se *sienten a la misma velocidad* independientemente del tamaño del intervalo.
+- Subir y bajar a través del mismo intervalo musical son perfectamente simétricos en duración y trayectoria.
+
+Esto coincide con la manera en que una voz humana o un instrumento sin trastes se mueve entre notas, y es la razón por la cual el glide de Andes JX se siente musicalmente natural a lo largo de todo el teclado.
+
 > 💡 **Tip**: Para líneas musicales de bass y lead, valores entre `20–50 %` suelen funcionar bien. Por encima de `70 %`, el glide se vuelve muy lento y comienza a sentirse más como un efecto de deslizamiento exagerado que como una transición natural entre notas.
+
+> 🎓 **Por qué importa el glide en dominio logarítmico.** Una implementación ingenua del glide suaviza la *frecuencia en Hz* con un filtro pasa-bajos simple. Sobre el papel se ve correcta, pero suena mal en un instrumento: como la percepción de altura es logarítmica, deslizar de `100 Hz` a `200 Hz` (una octava) recorre la misma distancia percibida que deslizar de `1000 Hz` a aproximadamente `1100 Hz` (apenas ~1.6 semitonos), pero un filtro en Hz tomaría el mismo tiempo para ambos. El resultado es un portamento que *se apresura* en el registro grave y *se arrastra* en el agudo, y que se siente asimétrico según vaya hacia arriba o hacia abajo. Suavizar en cambio el *logaritmo* de la frecuencia — equivalentemente, suavizar en semitonos — produce un glide donde tiempo igual significa recorrido en altura igual, en ambas direcciones. Es una de las pequeñas pero definitorias diferencias entre un portamento que "se siente bien" y uno que "se siente raro".
 
 ### GLIDE BEND
 
