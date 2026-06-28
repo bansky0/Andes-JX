@@ -12,11 +12,11 @@
     Module: IFilter
     Purpose:
         EN: Pure abstract interface that all filter implementations in
-            AndesJX must conform to. Lets Voice and Synth treat any filter
-            (Ladder, Moog, SVF, SVFFilter) through the same handle.
+            AndesJX must conform to. Lets Voice and Synth treat the available filter adapters
+            (MoogFilter and SVFFilter) through the same handle.
         ES: Interfaz abstracta pura que toda implementación de filtro en
-            AndesJX debe cumplir. Permite que Voice y Synth manejen cualquier
-            filtro (Ladder, Moog, SVF, SVFFilter) a través del mismo handle.
+            AndesJX debe cumplir. Permite que Voice y Synth manejen los adaptadores de filtro disponibles
+            (MoogFilter y SVFFilter) a través del mismo handle.
 
     Main responsibilities:
         EN:
@@ -33,15 +33,13 @@
           - Proveer un mecanismo ligero de identificación (getFilterType)
 
     Architectural role:
-        EN: Implemented by LadderFilter, MoogFilter, SVF and SVFFilter.
-            Voice holds a pointer/reference to IFilter, so the choice of
-            filter algorithm becomes a parameter at runtime (filterType in
-            the Preset) instead of a compile-time decision.
-        ES: La implementan LadderFilter, MoogFilter, SVF y SVFFilter.
-            Voice mantiene un puntero/referencia a IFilter, de modo que la
-            elección del algoritmo se vuelve un parámetro en tiempo de
-            ejecución (filterType en el Preset) y no una decisión de
-            compilación.
+        // EN: Implemented by the adapter classes MoogFilter and SVFFilter.
+        //     The internal DSP classes LadderFilter and SVF remain deliberately
+        //     decoupled from this interface and are wrapped through composition.
+        //
+        // ES: Implementada por las clases adaptadoras MoogFilter y SVFFilter.
+        //     Las clases DSP internas LadderFilter y SVF permanecen desacopladas
+        //     deliberadamente de esta interfaz y se envuelven mediante composición.
 
     Notes:
         EN:

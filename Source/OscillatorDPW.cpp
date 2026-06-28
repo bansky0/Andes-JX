@@ -1,4 +1,4 @@
-﻿/*
+/*
   ==============================================================================
 
     OscillatorDPW.cpp
@@ -28,9 +28,9 @@
             discontinuous waveform directly. It builds a smooth polynomial
             p(x) of the bipolar phase x in [-1, 1) that is
             C^(N-1)-continuous across the wrap, so the discontinuity only
-            appears in its N-th derivative. Differentiating p(x) numerically
-            (N-1) times recovers the classic waveform, band-limited by
-            construction:
+            appears in its N-th derivative. Differentiating p(x) numerically 
+            (N-1) times recovers an approximation of the classic waveform 
+            with significantly reduced aliasing:
 
               - saw      -> DPW4: p(x) = x^4 - 2x^2, 3rd finite difference
               - triangle -> DPW2: p(x) = x*(|x| - 1), 1st finite difference

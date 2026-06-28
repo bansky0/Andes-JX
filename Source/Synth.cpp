@@ -212,13 +212,20 @@ void Synth::restartMonoVoice(int note, int velocity)
 
     Envelope& env = voice.env;
 
-    // EN: CC73 (attack time) and CC72 (release time) scale the envelope
-    //     shape factors. Range [0.25, 2.0] means the user can halve or
-    //     double the envelope speed from the MIDI controller.
-    // ES: CC73 (tiempo de attack) y CC72 (tiempo de release) escalan los
-    //     factores de forma de la envolvente. Rango [0.25, 2.0] significa
-    //     que el usuario puede dividir o duplicar la velocidad de la
-    //     envolvente desde el controlador MIDI.
+    // EN: CC73 (attack) and CC72 (release) scale the amplitude envelope's
+    //     attack/release coefficients when a note is started or retriggered.
+    //     The multiplier range is [0.25, 2.0], so the approximate time
+    //     constant can range from one quarter to twice the value set by the
+    //     main envelope controls. This scaling is applied only to the
+    //     amplitude envelope, not to the filter envelope.
+    //
+    // ES: CC73 (attack) y CC72 (release) escalan los coeficientes de attack/
+    //     release de la envolvente de amplitud cuando una nota se inicia o
+    //     se redispara. El rango del multiplicador es [0.25, 2.0], por lo que
+    //     la constante temporal aproximada puede ir desde un cuarto hasta el
+    //     doble del valor fijado por los controles principales de envolvente.
+    //     Este escalado se aplica solo a la envolvente de amplitud, no a la
+    //     envolvente de filtro.
     const float relMult = 0.25f + 1.75f * cc.release;
     const float atkMult = 0.25f + 1.75f * cc.attack;
     env.attackMultiplier = std::pow(envAttack, 1.0f / atkMult);
@@ -657,14 +664,16 @@ void Synth::startVoice(int v, int note, int velocity)
     //  PWM phase sync / Sync de fase para PWM
     // ------------------------------------------------------------------------
 
-    // EN: When PWM is active and vibrato is off, force osc2 to share
-    //     osc1's phase so the PWM modulation is coherent across voices.
-    //     If vibrato is also on, the extra detune would break the sync
-    //     anyway, so we skip it.
-    // ES: Cuando la modulación PWM está activa y no hay vibrato, forzar
-    //     a osc2 a compartir la fase de osc1 para que la modulación PWM
-    //     sea coherente entre voces. Si además hay vibrato, el detune
-    //     extra rompería la sincronización, así que se omite.
+    // EN: PWM phase alignment. When PWM is active and vibrato is off,
+    //  align osc2's initial phase state to osc1 so PWM modulation starts
+    //  coherently across voices. This is not classic hard sync; it is a
+    //  one-time phase-state alignment at note start.
+    //
+    //  ES: Alineación de fase para PWM. Cuando la modulación PWM está activa
+    //  y no hay vibrato, alinear el estado inicial de fase de osc2 con
+    //  osc1 para que la modulación PWM arranque coherentemente entre voces.
+    //  Esto no es hard sync clásico; es una alineación de estado de fase
+    //  una sola vez al inicio de la nota.
     if (lfoDepthSemis == 0.0f && pwmDepth > 0.0f)
         voice.osc2.syncPhase(voice.osc1);
 

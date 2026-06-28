@@ -1341,11 +1341,11 @@ void AndesJXAudioProcessorEditor::setupSecondaryKnob(juce::Slider& slider)
 //     total.
 void AndesJXAudioProcessorEditor::initialiseValueLabeledControl(juce::Slider& slider,
     juce::Label& label,
-    const juce::String& componentID,
+    const juce::String& mycomponentID,
     std::function<void()> updateFn)
 {
     setupSecondaryKnob(slider);
-    slider.setComponentID(componentID);
+    slider.setComponentID(mycomponentID);
 
     label.setJustificationType(juce::Justification::centred);
     label.setColour(juce::Label::textColourId, AndesTheme::Colours::text);

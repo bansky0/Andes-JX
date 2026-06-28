@@ -12,11 +12,11 @@
     Module: MoogFilter
     Purpose:
         EN: Adapter that exposes LadderFilter through the IFilter interface,
-            allowing the Moog ladder model to coexist with other filter
+            allowing the Huovilainen-inspired Moog-style ladder to coexist with other filter
             implementations (SVF, etc.) inside Voice and Synth.
         ES: Adaptador que expone LadderFilter a través de la interfaz
-            IFilter, permitiendo que el modelo Moog ladder coexista con
-            otras implementaciones de filtro (SVF, etc.) en Voice y Synth.
+            IFilter, permitiendo que el ladder estilo Moog inspirado en Huovilainen coexista
+            con otras implementaciones de filtro (SVF, etc.) en Voice y Synth.
 
     Main responsibilities:
         EN:
@@ -33,12 +33,12 @@
     Architectural role:
         EN: Together with the SVFFilter wrapper, this class lets the synth
             switch filter algorithms at runtime by storing an IFilter*
-            instead of a concrete type. Voice never references LadderFilter
-            directly; it only sees IFilter.
+            instead of a concrete type. Voice never references the internal 
+            LadderFilter DSP class directly; it only sees IFilter.
         ES: Junto con el wrapper SVFFilter, esta clase permite que el synth
             cambie de algoritmo de filtro en tiempo de ejecución guardando
-            un IFilter* en lugar de un tipo concreto. Voice nunca referencia
-            a LadderFilter directamente; solo ve IFilter.
+            un IFilter* en lugar de un tipo concreto. Voice nunca referencia 
+            directamente la clase DSP interna LadderFilter; solo ve IFilter.
 
     Notes:
         EN:
@@ -124,7 +124,7 @@ public:
     // ES: Cadena de identificación usada para depuración y la GUI.
     const char* getFilterType() const override
     {
-        return "Moog Ladder (Huovilainen)";
+        return "Moog Ladder (Huovilainen-inspired)";
     }
 
 

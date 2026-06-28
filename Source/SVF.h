@@ -89,7 +89,7 @@
             accurate across the audible range.
           - Q is the classical quality factor: Q = 0.707 is Butterworth
             (maximally flat), Q > 3 starts producing audible peaks,
-            Q ≈ 10 is near self-oscillation.
+            Q ≈ 10 produces high resonance and prolonged ringing.
           - This class does NOT inherit from IFilter. The adapter
             SVFFilter (see SVFFilter.h) wraps it and exposes the IFilter
             contract, handling the resonance [0, 1] → Q conversion.
@@ -99,7 +99,7 @@
             en Hz sea preciso en todo el rango audible.
           - Q es el factor de calidad clásico: Q = 0.707 es Butterworth
             (máximamente plano), Q > 3 empieza a producir picos audibles,
-            Q ≈ 10 está cerca de la auto-oscilación.
+            Q ≈ 10 produce alta resonancia y ringing prolongado.
           - Esta clase NO hereda de IFilter. El adaptador SVFFilter
             (ver SVFFilter.h) la envuelve y expone el contrato IFilter,
             además de convertir resonance [0, 1] → Q.
@@ -188,11 +188,13 @@ public:
         float v2 = ic2eq + a2 * ic1eq + a3 * v3;
 
         // EN: Trapezoidal integrator update. The form  2v - state  is the
-        //     standard TPT (Topology-Preserving Transform) rule that keeps
-        //     the digital filter response identical to the analog prototype.
+        //     the standard TPT (Topology-Preserving Transform) rule used to
+        //     preserve the analog topology and obtain a well-behaved digital
+        //     response.
         // ES: Actualización del integrador trapezoidal. La forma  2v - estado
-        //     es la regla estándar TPT (Topology-Preserving Transform) que
-        //     mantiene la respuesta digital idéntica al prototipo analógico.
+        //     es la regla estándar TPT (Topology-Preserving Transform) usada para
+        //     preservar la topología analógica y obtener una respuesta digital
+        //     bien comportada.
         ic1eq = 2.0f * v1 - ic1eq;
         ic2eq = 2.0f * v2 - ic2eq;
 

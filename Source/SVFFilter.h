@@ -12,31 +12,31 @@
     Module: SVFFilter
     Purpose:
         EN: Adapter that exposes a 24 dB/oct cascade of two SVF stages
-            through the IFilter interface. Provides a cleaner, more
-            surgical alternative to the Moog ladder while matching its
-            per-octave slope.
+            through the IFilter interface. Provides a clean lowpass
+            alternative to the Moog-style ladder while using the same
+            fourth-order nominal slope.
+
         ES: Adaptador que expone una cascada de 24 dB/oct de dos etapas
             SVF a través de la interfaz IFilter. Proporciona una
-            alternativa más limpia y quirúrgica al Moog ladder,
-            igualando su pendiente por octava.
+            alternativa lowpass limpia al ladder estilo Moog usando la
+            misma pendiente nominal de cuarto orden.
 
     Main responsibilities:
         EN:
           - Inherit from IFilter and implement the full contract
-          - Cascade two SVF instances to double the slope from 12 to
-            24 dB/oct
-          - Convert the normalized resonance [0, 1] into the Q units
-            expected by the underlying SVF
-          - Apply a loudness compensation that prevents runaway volume
-            at high resonance
+          - Cascade two SVF instances to double the nominal slope from
+            12 to 24 dB/oct
+          - Convert normalized resonance [0, 1] into the Q units expected
+            by the underlying SVF stages
+          - Apply an empirical gain attenuation at high resonance
+
         ES:
           - Heredar de IFilter e implementar el contrato completo
-          - Encadenar dos instancias SVF para duplicar la pendiente de
-            12 a 24 dB/oct
-          - Convertir la resonancia normalizada [0, 1] a las unidades
-            de Q que espera el SVF subyacente
-          - Aplicar compensación de loudness para evitar un volumen
-            descontrolado con resonancia alta
+          - Encadenar dos instancias SVF para duplicar la pendiente nominal
+            de 12 a 24 dB/oct
+          - Convertir la resonancia normalizada [0, 1] a las unidades de Q
+            esperadas por las etapas SVF subyacentes
+          - Aplicar una atenuación empírica de ganancia a alta resonancia
 
     Architectural role:
         EN: Paired with MoogFilter via the IFilter interface. The synth
@@ -51,28 +51,25 @@
     Notes:
         EN:
           - The cascade uses a reduced Q on the second stage (Q2 = 0.7·Q).
-            Two identical SVFs in series would produce a narrower, more
-            aggressive peak than the Moog ladder; the reduction empirically
-            matches their perceived character.
-          - The loudness compensation  y *= 1 / (1 + 0.8·resonance)  is a
-            practical fix, not a physically derived formula. It trades a
-            tiny amount of low-resonance level for a much more usable
-            high-resonance range.
+            This empirical reduction moderates the resonant peak produced
+            by cascading two second-order filters.
+          - The gain attenuation  y *= 1 / (1 + 0.8·resonance)  is a
+            practical, empirical scaling applied at high resonance. It is
+            not a perceptual loudness compensation model.
           - This is the Adapter counterpart of MoogFilter (see MoogFilter.h).
             Together they illustrate the Strategy pattern from IFilter:
-            same abstract contract, two different sonic characters.
+            same abstract contract, two different filter implementations.
+
         ES:
-          - La cascada usa Q reducido en la segunda etapa (Q2 = 0.7·Q).
-            Dos SVFs idénticos en serie producirían un pico más estrecho
-            y agresivo que el Moog ladder; la reducción iguala
-            empíricamente el carácter percibido de ambos filtros.
-          - La compensación de loudness  y *= 1 / (1 + 0.8·resonance)  es
-            un arreglo práctico, no una fórmula derivada físicamente.
-            Sacrifica un poco de nivel en baja resonancia a cambio de un
-            rango mucho más usable en alta resonancia.
+          - La cascada usa un Q reducido en la segunda etapa (Q2 = 0.7·Q).
+            Esta reducción empírica modera el pico resonante producido al
+            encadenar dos filtros de segundo orden.
+          - La atenuación de ganancia  y *= 1 / (1 + 0.8·resonance)  es un
+            escalado práctico y empírico aplicado a alta resonancia. No es
+            un modelo de compensación perceptual de loudness.
           - Es la contraparte Adapter de MoogFilter (ver MoogFilter.h).
             Juntos ilustran el patrón Strategy desde IFilter: mismo
-            contrato abstracto, dos caracteres sonoros distintos.
+            contrato abstracto, dos implementaciones de filtro distintas.
 */
 
 #pragma once
@@ -117,34 +114,35 @@ public:
     }
 
     // EN: Computes coefficients for both cascaded SVF stages. Converts
-    //     the normalized resonance [0, 1] into Q and applies a reduced Q
-    //     on the second stage to match the Moog ladder's character.
-    // ES: Calcula coeficientes para ambas etapas SVF encadenadas.
-    //     Convierte la resonancia normalizada [0, 1] a Q y aplica un Q
-    //     reducido en la segunda etapa para igualar el carácter del
-    //     Moog ladder.
+    //     normalized resonance [0, 1] into Q and applies a reduced Q on
+    //     the second stage to moderate the resonant peak of the cascade.
+    //
+    // ES: Calcula coeficientes para ambas etapas SVF encadenadas. Convierte
+    //     la resonancia normalizada [0, 1] a Q y aplica un Q reducido en la
+    //     segunda etapa para moderar el pico resonante de la cascada.
     void updateCoefficients(float cutoffHz, float resonance) override
     {
         resonance = std::clamp(resonance, 0.0f, 1.0f);
         lastRes = resonance;
 
-        // EN: Linear map from normalized resonance to Q:
-        //       resonance = 0 -> Q = 0.5  (no resonance)
-        //       resonance = 1 -> Q = 10   (near self-oscillation)
-        // ES: Mapeo lineal de resonancia normalizada a Q:
-        //       resonance = 0 -> Q = 0.5  (sin resonancia)
-        //       resonance = 1 -> Q = 10   (cerca de auto-oscilación)
+        // EN: Initial map from normalized resonance to Q. The underlying SVF
+        //     stages clamp Q to [0.707, 10], so very low resonance values are
+        //     effectively limited to Butterworth damping.
+        //
+        // ES: Mapeo inicial de resonancia normalizada a Q. Las etapas SVF
+        //     subyacentes limitan Q a [0.707, 10], por lo que valores muy bajos
+        //     de resonancia quedan efectivamente limitados a amortiguamiento
+        //     Butterworth.
         float Q = 0.5f + resonance * 9.5f;
         Q = std::clamp(Q, 0.5f, 10.0f);
 
-        // EN: For a 24 dB/oct cascade, a slightly lower Q on the second
-        //     stage prevents the SVF from sounding more aggressive than
-        //     the Moog ladder at comparable resonance settings. The 0.7
-        //     factor is empirical, derived from A/B comparison.
-        // ES: Para una cascada de 24 dB/oct, un Q ligeramente menor en la
-        //     segunda etapa evita que el SVF suene más agresivo que el
-        //     Moog ladder a ajustes de resonancia comparables. El factor
-        //     0.7 es empírico, derivado de comparaciones A/B.
+        // EN: For a 24 dB/oct cascade, a slightly lower Q on the second stage
+        //     moderates the resonant peak that would result from cascading two
+        //     identical high-Q sections. The 0.7 factor is empirical.
+        //
+        // ES: Para una cascada de 24 dB/oct, un Q ligeramente menor en la segunda
+        //     etapa modera el pico resonante que resultaría de encadenar dos
+        //     secciones idénticas con Q alto. El factor 0.7 es empírico.
         float Q2 = 0.7f * Q;
 
         svf1.updateCoefficients(cutoffHz, Q);
@@ -160,14 +158,15 @@ public:
         float y = svf1.render(input);
         y = svf2.render(y);
 
-        // EN: Loudness compensation. High resonance narrows the response
-        //     peak and boosts its gain, which can clip the output. This
-        //     attenuation keeps the perceived level consistent across the
-        //     resonance range.
-        // ES: Compensación de loudness. Resonancia alta estrecha el pico
-        //     de respuesta e incrementa su ganancia, lo que puede saturar
-        //     la salida. Esta atenuación mantiene el nivel percibido
-        //     consistente en todo el rango de resonancia.
+        // EN: Empirical gain attenuation. High resonance can produce a large
+        //     resonant peak; this simple scaling reduces the output level as
+        //     resonance increases. It does not guarantee constant perceived
+        //     loudness.
+        //
+        // ES: Atenuación empírica de ganancia. La resonancia alta puede producir
+        //     un pico resonante grande; este escalado simple reduce el nivel de
+        //     salida conforme aumenta la resonancia. No garantiza loudness
+        //     percibido constante.
         y *= 1.0f / (1.0f + 0.8f * lastRes);
 
         return y;

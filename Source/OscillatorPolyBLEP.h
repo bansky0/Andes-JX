@@ -22,7 +22,7 @@
     Main responsibilities:
         EN:
           - Advance and wrap the internal phase at the set frequency
-          - Generate aliasing-free saw and square via PolyBLEP correction
+          - Generate reduced-aliasing saw and square via PolyBLEP correction
           - Derive triangle by leaky-integrating a band-limited square
           - Support hard phase-sync between two oscillators
         ES:
@@ -174,8 +174,8 @@ private:
     float polyBLEP(float t) const;
 
     // EN: Advances phase by phaseInc and wraps it into [0, 1). Returns the
-    //     previous phase (useful for PolyBLEP discontinuity detection).
+    //     updated phase (useful for PolyBLEP discontinuity detection).
     // ES: Avanza la fase en phaseInc y la envuelve a [0, 1). Devuelve la
-    //     fase anterior (útil para detectar discontinuidades en PolyBLEP).
+    //     fase actualizada (útil para detectar discontinuidades en PolyBLEP).
     float advance();
 };

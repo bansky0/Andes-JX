@@ -787,21 +787,23 @@ void AndesJXAudioProcessor::update()
 
     // EN: Convert each ADSR knob (in [0, 100]) into the per-sample IIR
     //     coefficient consumed by Envelope. The formula
-    //         coef = exp( -1/fs * exp(5.5 - 0.075 * knob) )
-    //     produces a coefficient that maps a knob of 0 to a fast curve
-    //     and a knob of 100 to a slow curve, with smooth perceptual
-    //     spacing (the inner exp is the time constant in samples).
-    //     Sustain is a level in [0, 1], not a time, so it is just a
-    //     percent-to-fraction conversion.
-    // ES: Convertir cada knob ADSR (en [0, 100]) al coeficiente IIR
-    //     por muestra que consume Envelope. La fórmula
-    //         coef = exp( -1/fs * exp(5.5 - 0.075 * knob) )
-    //     produce un coeficiente que mapea un knob 0 a una curva
-    //     rápida y un knob 100 a una curva lenta, con espaciado
-    //     perceptual suave (el exp interno es la constante de tiempo
-    //     en muestras).
-    //     Sustain es un nivel en [0, 1], no un tiempo, así que es solo
-    //     una conversión de porcentaje a fracción.
+    //         coef = exp( -rate / fs )
+    //         rate = exp(5.5 - 0.075 * knob)
+    //     maps low knob values to fast exponential motion and high values
+    //     to slower motion, with smooth perceptual spacing. `rate` is an
+    //     exponential approach rate in s^-1; its inverse is a time constant,
+    //     not the total duration of the envelope stage.
+    //     Sustain is a level in [0, 1], not a time.
+    //
+    // ES: Convierte cada knob ADSR (en [0, 100]) al coeficiente IIR por
+    //     muestra que consume Envelope. La fórmula
+    //         coef = exp( -rate / fs )
+    //         rate = exp(5.5 - 0.075 * knob)
+    //     mapea valores bajos del knob a un movimiento exponencial rápido
+    //     y valores altos a uno más lento, con espaciado perceptual suave.
+    //     `rate` es una tasa de aproximación exponencial en s^-1; su inverso
+    //     es una constante temporal, no la duración total de la etapa.
+    //     Sustain es un nivel en [0, 1], no un tiempo.
     synth.envAttack = std::exp(-inverseSampleRate * std::exp(5.5f - 0.075f * envAttackParam->get()));
     synth.envDecay = std::exp(-inverseSampleRate * std::exp(5.5f - 0.075f * envDecayParam->get()));
     synth.envSustain = envSustainParam->get() / 100.0f;

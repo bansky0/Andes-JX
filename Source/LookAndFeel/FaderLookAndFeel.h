@@ -21,7 +21,7 @@
             attack/decay/sustain/release). Renderiza cada fader como un
             sprite elegido de un sprite sheet pre-renderizado
             (AndesFaderADSR.png) y superpone el texto del valor en vivo
-            mientras el usuario est· sobre el fader o arrastr·ndolo.
+            mientras el usuario est√° sobre el fader o arrastr√°ndolo.
 
     Architectural role:
         EN: Same sprite-sheet paradigm as SecondaryKnobLookAndFeel: a
@@ -41,18 +41,18 @@
         ES: Mismo paradigma de sprite sheet que
             SecondaryKnobLookAndFeel: un PNG contiene cada estado
             visual del cap del fader apilado verticalmente, y la
-            posiciÛn normalizada del slider elige el frame correcto en
+            posici√≥n normalizada del slider elige el frame correcto en
             runtime. Tres diferencias notables respecto al knob
-            secundario canÛnico:
+            secundario can√≥nico:
               - Los frames son RECTANGULARES (32 x 128 por defecto),
                 no cuadrados, porque el fader es un slider vertical
                 con un track largo.
-              - Las dimensiones del frame son configurables vÌa
-                argumentos del constructor, asÌ la misma clase puede
+              - Las dimensiones del frame son configurables v√≠a
+                argumentos del constructor, as√≠ la misma clase puede
                 reusarse para sprite sheets de faders exportados a
                 distintas resoluciones.
               - El texto del valor solo se muestra mientras el usuario
-                est· sobre el fader o arrastr·ndolo, en lugar de
+                est√° sobre el fader o arrastr√°ndolo, en lugar de
                 permanentemente como el camino interno (no usado) de
                 texto de SecondaryKnobLookAndFeel.
 
@@ -73,10 +73,10 @@
             de AndesJX (accesores del tema disponibles como
             textColour(), fontTiny(), etc.).
           - Layout del sprite sheet: la imagen debe medir exactamente
-            frameWidth pÌxeles de ancho y (numFrames * frameHeight)
-            pÌxeles de alto, con los frames apilados de arriba a
-            abajo desde el frame 0 (slider en mÌnimo) hasta el frame
-            N-1 (slider en m·ximo).
+            frameWidth p√≠xeles de ancho y (numFrames * frameHeight)
+            p√≠xeles de alto, con los frames apilados de arriba a
+            abajo desde el frame 0 (slider en m√≠nimo) hasta el frame
+            N-1 (slider en m√°ximo).
           - Para estilos de slider no-verticales, la llamada cae al
             dibujado por defecto de JUCE para que la clase no rompa
             nada si se reusa para un tipo de slider no previsto.
@@ -95,10 +95,10 @@ public:
     //     AndesFaderADSR.png (32 x 128 per frame). If a future asset
     //     exports at a different resolution, instantiate the class
     //     with the new dimensions instead of editing this header.
-    // ES: Los par·metros del constructor fijan las dimensiones de los
+    // ES: Los par√°metros del constructor fijan las dimensiones de los
     //     frames del sprite sheet. Los defaults coinciden con el
     //     AndesFaderADSR.png que se entrega con AndesJX (32 x 128 por
-    //     frame). Si un asset futuro se exporta a otra resoluciÛn,
+    //     frame). Si un asset futuro se exporta a otra resoluci√≥n,
     //     instanciar la clase con las nuevas dimensiones en lugar de
     //     editar este header.
     FaderLookAndFeel(int frameW = 32, int frameH = 128)
@@ -135,18 +135,18 @@ public:
     //       1. Salir limpiamente si el sprite sheet no se pudo cargar.
     //       2. Delegar al dibujado por defecto de JUCE para cualquier
     //          estilo no-vertical. AndesJX solo usa LinearVertical
-    //          aquÌ, pero esto protege contra mal uso accidental.
-    //       3. Validar la geometrÌa del sprite sheet (el ancho debe
+    //          aqu√≠, pero esto protege contra mal uso accidental.
+    //       3. Validar la geometr√≠a del sprite sheet (el ancho debe
     //          coincidir con frameWidth; numFrames debe ser > 0).
-    //       4. Mapear el valor del slider a un Ìndice de frame vÌa
+    //       4. Mapear el valor del slider a un √≠ndice de frame v√≠a
     //          valueToProportionOfLength, que respeta los skews custom
-    //          del slider. jlimit limita el Ìndice para que valores
-    //          exactamente en el m·ximo no produzcan un frame fuera
+    //          del slider. jlimit limita el √≠ndice para que valores
+    //          exactamente en el m√°ximo no produzcan un frame fuera
     //          de rango.
-    //       5. Hacer blit del frame seleccionado en el rect·ngulo de
-    //          destino. Mientras el usuario est· sobre el fader o
-    //          arrastr·ndolo, superponer el texto del valor en vivo
-    //          justo arriba del cap del fader para que el n˙mero sea
+    //       5. Hacer blit del frame seleccionado en el rect√°ngulo de
+    //          destino. Mientras el usuario est√° sobre el fader o
+    //          arrastr√°ndolo, superponer el texto del valor en vivo
+    //          justo arriba del cap del fader para que el n√∫mero sea
     //          visible sin tapar el cap mismo.
     void drawLinearSlider(juce::Graphics& g,
         int x, int y, int width, int height,
@@ -159,9 +159,9 @@ public:
         // EN: Position arguments come from JUCE for primitive-based
         //     drawing. The sprite-sheet path uses the slider's
         //     normalized value instead, so we mark them as unused.
-        // ES: Los argumentos de posiciÛn vienen de JUCE para dibujado
+        // ES: Los argumentos de posici√≥n vienen de JUCE para dibujado
         //     basado en primitivas. El camino de sprite sheet usa el
-        //     valor normalizado del slider, asÌ que los marcamos como
+        //     valor normalizado del slider, as√≠ que los marcamos como
         //     no usados.
         juce::ignoreUnused(sliderPos, minSliderPos, maxSliderPos);
 
@@ -185,7 +185,7 @@ public:
         //     skew applied to the slider, so the visual position
         //     matches what the user perceives.
         // ES: valueToProportionOfLength devuelve [0, 1] respetando
-        //     cualquier skew aplicado al slider, asÌ la posiciÛn
+        //     cualquier skew aplicado al slider, as√≠ la posici√≥n
         //     visual coincide con lo que el usuario percibe.
         const double proportion = slider.valueToProportionOfLength(slider.getValue());
 
@@ -206,9 +206,9 @@ public:
         //     values like "100" do not get clipped at narrow
         //     fader columns.
         // ES: Overlay del valor en vivo. Solo visible durante la
-        //     interacciÛn para que la GUI quede limpia cuando el
-        //     usuario no est· tocando el fader. Se dibuja un poco por
-        //     encima del ·rea del slider (y - 4) con ancho extendido
+        //     interacci√≥n para que la GUI quede limpia cuando el
+        //     usuario no est√° tocando el fader. Se dibuja un poco por
+        //     encima del √°rea del slider (y - 4) con ancho extendido
         //     (width + 8) para que valores de varios caracteres como
         //     "100" no se recorten en columnas estrechas de fader.
         if (slider.isMouseOverOrDragging())
@@ -227,7 +227,7 @@ public:
 private:
     // ------------------------------------------------------------------------
     //  Sprite sheet + frame geometry
-    //  Sprite sheet + geometrÌa de frames
+    //  Sprite sheet + geometr√≠a de frames
     // ------------------------------------------------------------------------
 
     juce::Image faderImage;

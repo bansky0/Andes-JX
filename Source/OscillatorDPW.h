@@ -63,8 +63,8 @@
         EN:
           - DPW builds a polynomial that is C^(N-1)-continuous across the
             phase wrap, so the discontinuity only appears in its N-th
-            derivative. Differentiating (N-1) times recovers a band-limited
-            classic waveform.
+            derivative. Differentiating (N-1) times recovers an approximation 
+            of the classic waveform with reduced aliasing.
           - Differencing two band-limited saws yields a band-limited square
             with ZERO DC for free (no separate DC-correction term needed,
             unlike a naive +/-1 pulse).

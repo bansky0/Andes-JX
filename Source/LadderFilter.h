@@ -12,12 +12,12 @@
     Module: LadderFilter
     Purpose:
         EN: Digital model of the four-pole Moog ladder lowpass filter,
-            based on Huovilainen's non-linear formulation. Provides the
-            warm, slightly saturated, self-oscillating character that
+            inspired by Huovilainen's non-linear formulation. Provides the
+            warm, slightly saturated, resonant, slightly saturated character that
             defined the Minimoog and similar instruments.
         ES: Modelo digital del filtro Moog ladder lowpass de cuatro polos,
-            basado en la formulación no lineal de Huovilainen. Aporta el
-            carácter cálido, ligeramente saturado y auto-oscilante que
+            inspirado en la formulación no lineal de Huovilainen. Aporta el
+            carácter cálido, carácter resonante y ligeramente saturado que
             definió al Minimoog y otros instrumentos similares.
 
     Main responsibilities:
@@ -131,47 +131,41 @@ public:
 
     // EN: Computes all internal coefficients from the user-facing cutoff
     //     and resonance. Should be called per audio block, not per sample.
-    //     The math here is the Huovilainen model (DAFx 2004, eqs. 13 & 15).
+    //     The structure is Huovilainen-inspired, but the active coefficient mapping
+    //     is calibrated for the one-pole recurrence used below.
     // ES: Calcula todos los coeficientes internos a partir del cutoff y
     //     la resonancia que ve el usuario. Debe llamarse por bloque de
-    //     audio, no por muestra. La matemática es el modelo de Huovilainen
-    //     (DAFx 2004, ecs. 13 y 15).
+    //     audio, no por muestra. 
+    //     La estructura está inspirada en Huovilainen, pero el mapeo activo de
+    //     coeficientes está calibrado para la recurrencia one-pole usada abajo.
     void updateCoefficients(float cutoffFreq, float reso01)
     {
         cutoffHz = std::clamp(cutoffFreq, 20.0f, sampleRate * 0.45f);
-        resonance = std::clamp(reso01, 0.0f, 1.0f);  // EN: 0 = none, 1 = self-oscillation
-        // ES: 0 = nada, 1 = auto-oscilación
-
-// EN: Frequency normalized to the oversampled rate (2x).
-// ES: Frecuencia normalizada a la sample rate sobremuestreada (2x).
-        const float fs_os = sampleRate * 2.0f;
+        resonance = std::clamp(reso01, 0.0f, 1.0f);  // EN: normalized feedback amount | ES: cantidad normalizada de realimentación
+        // EN: Frequency normalized to the sampled rate.
+        // ES: Frecuencia normalizada a la sample rate..
+        const float fs_os = sampleRate;
         float f = cutoffHz / fs_os;
-        f = std::clamp(f, 0.0f, 0.49f);
+        f = std::clamp(f, 0.0f, 0.9995f);
 
-        // EN: Pre-warped cutoff frequency (Huovilainen eq. 13). The bilinear
-        //     transform compresses high frequencies; this polynomial
-        //     compensates so that the perceived cutoff matches the request.
-        // ES: Frecuencia de cutoff pre-warped (Huovilainen ec. 13). La
-        //     transformada bilineal comprime las altas frecuencias; este
-        //     polinomio compensa para que el cutoff percibido coincida.
-        p = f * (1.8f - 0.8f * f);
+        // EN: One-pole exponential coefficient calibrated for the recurrence
+        //         y += g * (in - y)
+        //     used in each ladder stage. This maps the requested cutoff in Hz
+        //     to a stable per-sample smoothing coefficient.
+        //
+        // ES: Coeficiente exponencial one-pole calibrado para la recurrencia
+        //         y += g * (in - y)
+        //     usada en cada etapa del ladder. Mapea el cutoff solicitado en Hz
+        //     a un coeficiente estable de suavizado por muestra.
+        p =1.0f - std::exp(-TWO_PI * cutoffHz / sampleRate);
 
-        // EN: Auxiliary coefficient declared in the original paper but not
-        //     used by this simplified one-substep implementation. Kept here
-        //     for fidelity with the reference and possible future use.
-        // ES: Coeficiente auxiliar declarado en el paper original pero no
-        //     usado por esta implementación simplificada de un substep.
-        //     Se conserva por fidelidad con la referencia y uso futuro.
-        k = 2.0f * p - 1.0f;
-
-        // EN: Frequency-dependent resonance compensation (Huovilainen
-        //     eq. 15). At high cutoffs the simple feedback gain "r"
-        //     produces less perceived resonance; this rational expression
-        //     restores the missing energy.
-        // ES: Compensación de resonancia dependiente de la frecuencia
-        //     (Huovilainen ec. 15). En cutoffs altos la ganancia de
-        //     realimentación "r" simple produce menos resonancia
-        //     percibida; esta expresión racional recupera la energía.
+        // EN: Frequency-dependent feedback scaling. This empirical expression
+        //     increases the effective feedback at higher cutoffs, where a simple
+        //     constant feedback amount would sound less resonant.
+        //
+        // ES: Escalado de realimentación dependiente de la frecuencia. Esta
+        //     expresión empírica incrementa la realimentación efectiva en cutoffs
+        //     altos, donde una cantidad de feedback constante sonaría menos resonante.
         float t = (1.0f - p) * 1.386249f;
         float t2 = 12.0f + t * t;
         r = resonance * (t2 + 6.0f * t) / (t2 - 6.0f * t);
@@ -214,7 +208,7 @@ public:
     // ES: Identifica este filtro para depuración y para la GUI.
     const char* getFilterType() const
     {
-        return "Moog Ladder (Huovilainen)";
+        return "Moog Ladder (Huovilainen-inspired)";
     }
 
 
@@ -282,6 +276,5 @@ private:
 
     float g = 0.0f;  // EN: integration coefficient        |  ES: coeficiente de integración
     float p = 0.0f;  // EN: pre-warped normalized cutoff   |  ES: cutoff normalizado pre-warped
-    float k = 0.0f;  // EN: auxiliary (unused, see notes)  |  ES: auxiliar (sin uso, ver notas)
     float r = 0.0f;  // EN: resonance feedback gain        |  ES: ganancia de realimentación
 };

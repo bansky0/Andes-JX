@@ -161,12 +161,12 @@ public:
         dpw.setPulseWidth(width);
     }
 
-    // EN: Hard-syncs this oscillator's phase to another one (osc1 resets
-    //     osc2 each cycle). Forwarded to BOTH engines so sync works
-    //     regardless of the selected OscEngine.
-    // ES: Sincroniza duro la fase de este oscilador con otro (osc1 resetea
-    //     a osc2 en cada ciclo). Se reenvía a AMBOS motores para que el sync
-    //     funcione con cualquier OscEngine seleccionado.
+    // EN: Aligns this oscillator's phase with another oscillator by copying
+    //     its internal phase state. Forwarded to BOTH engines so the selected
+    //     engine starts from the same phase regardless of OscEngine.
+    // ES: Alinea la fase de este oscilador con la de otro copiando su estado
+    //     interno de fase. Se reenvía a AMBOS motores para que el motor
+    //     seleccionado inicie con la misma fase independientemente del OscEngine.
     void syncPhase(const Oscillator& other)
     {
         polyblep.syncPhase(other.polyblep);

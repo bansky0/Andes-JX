@@ -124,7 +124,9 @@ public:
         // ES: Si estamos en Attack (target == 2.0) y llegamos al 99% del
         //     objetivo, pasamos a Decay: apuntamos a sustainLevel con
         //     decayMultiplier.
-        if (target >= 2.0f && level >= target * 0.99f) {
+        if (target >= 2.0f && level >= 1.0f)
+        {
+            level = 1.0f;
             multiplier = decayMultiplier;
             target = sustainLevel;
         }

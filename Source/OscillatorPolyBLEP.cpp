@@ -21,10 +21,11 @@
     Algorithm overview / Visión general del algoritmo:
         EN: A naive digital saw or square produced by direct computation
             aliases heavily because its spectrum extends beyond Nyquist.
-            PolyBLEP fixes this by adding a small polynomial residual near
-            each discontinuity that cancels the first two alias components
-            (order-2 correction). The residual is cheap (two multiplies)
-            and evaluated only within ±1 sample of the discontinuity.
+            PolyBLEP significantly reduces the aliasing this by adding a
+            small polynomial residual near each discontinuity that cancels
+            the first two alias components (order-2 correction). 
+            The residual is cheap (two multiplies) and evaluated only within 
+            ±1 sample of the discontinuity.
 
         ES: Una saw o square digital ingenua produce aliasing porque su
             espectro se extiende más allá de Nyquist. PolyBLEP lo corrige
@@ -132,10 +133,12 @@ void OscillatorPolyBLEP::prepare(double newSampleRate)
     integrator = 0.0f;
 }
 
-// EN: Updates the target frequency. The per-sample increment is recomputed
-//     lazily inside advance() and polyBLEP() on demand.
-// ES: Actualiza la frecuencia objetivo. El incremento por muestra se
-//     recalcula de forma perezosa dentro de advance() y polyBLEP().
+// EN: Updates the oscillator frequency in Hz. The per-sample phase
+//     increment is immediately recomputed from the current sample rate.
+//
+// ES: Actualiza la frecuencia del oscilador en Hz. El incremento de
+//     fase por muestra se recalcula inmediatamente usando la sample
+//     rate actual.
 void OscillatorPolyBLEP::setFrequency(float newFreq)
 {
     frequency = newFreq;
@@ -168,7 +171,7 @@ float OscillatorPolyBLEP::saw()
     float t = phase;
 
     float value = 2.0f * t - 1.0f;   // naive saw / saw ingenua
-    value += polyBLEP(t);            // correction at wrap / corrección en el wrap
+    value -= polyBLEP(t);            // correction at wrap / corrección en el wrap
 
     advance();
     return value;
