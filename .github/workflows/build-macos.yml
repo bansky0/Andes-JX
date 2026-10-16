@@ -1,6 +1,9 @@
 name: Build macOS (test)
 
 on:
+  push:
+    branches:
+      - feature/macos-build
   workflow_dispatch:
 
 jobs:
