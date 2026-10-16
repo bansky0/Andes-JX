@@ -1,3 +1,4 @@
+
 name: Build macOS (test)
 
 on:
@@ -9,6 +10,7 @@ on:
 jobs:
   build:
     runs-on: macos-15
+
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -28,17 +30,27 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p dist
+
           while IFS= read -r -d '' plugin; do
             cp -R "$plugin" dist/
-          done < <(find build/macos -type d \( -name 'Andes-JX.vst3' -o -name 'Andes-JX.component' \) -print0)
-          test -d dist/Andes-JX.vst3
-          test -d dist/Andes-JX.component
-          for plugin in dist/Andes-JX.vst3 dist/Andes-JX.component; do
+          done < <(
+            find build/macos -type d \
+              \( -name 'AndesJX.vst3' -o -name 'AndesJX.component' \) \
+              -print0
+          )
+
+          test -d dist/AndesJX.vst3
+          test -d dist/AndesJX.component
+
+          for plugin in dist/AndesJX.vst3 dist/AndesJX.component; do
             binary=$(find "$plugin/Contents/MacOS" -type f | head -n 1)
-            echo "$binary"
+
+            echo "Checking: $binary"
+
             lipo -archs "$binary" | tee /tmp/andes-archs.txt
-            grep -q arm64 /tmp/andes-archs.txt
-            grep -q x86_64 /tmp/andes-archs.txt
+
+            grep -qw arm64 /tmp/andes-archs.txt
+            grep -qw x86_64 /tmp/andes-archs.txt
           done
 
       - name: Upload unsigned test bundles

@@ -29,7 +29,7 @@ juce_add_plugin(AndesJX
     PLUGIN_CODE NRAN
     FORMATS ${ANDES_FORMATS}
     COPY_PLUGIN_AFTER_BUILD FALSE
-    PRODUCT_NAME "Andes-JX"
+    PRODUCT_NAME "AndesJX"
 )
 juce_generate_juce_header(AndesJX)
 
