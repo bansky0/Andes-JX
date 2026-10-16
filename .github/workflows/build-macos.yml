@@ -1,0 +1,46 @@
+name: Build macOS (test)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Configure universal build
+        run: >-
+          cmake -S . -B build/macos -G Xcode
+          -DCMAKE_BUILD_TYPE=Release
+          '-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64'
+          -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0
+
+      - name: Compile
+        run: cmake --build build/macos --config Release --parallel 3
+
+      - name: Collect and inspect plugins
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          while IFS= read -r -d '' plugin; do
+            cp -R "$plugin" dist/
+          done < <(find build/macos -type d \( -name 'Andes-JX.vst3' -o -name 'Andes-JX.component' \) -print0)
+          test -d dist/Andes-JX.vst3
+          test -d dist/Andes-JX.component
+          for plugin in dist/Andes-JX.vst3 dist/Andes-JX.component; do
+            binary=$(find "$plugin/Contents/MacOS" -type f | head -n 1)
+            echo "$binary"
+            lipo -archs "$binary" | tee /tmp/andes-archs.txt
+            grep -q arm64 /tmp/andes-archs.txt
+            grep -q x86_64 /tmp/andes-archs.txt
+          done
+
+      - name: Upload unsigned test bundles
+        uses: actions/upload-artifact@v4
+        with:
+          name: Andes-JX-macOS-universal-unsigned
+          path: dist/
+          if-no-files-found: error
