@@ -82,38 +82,38 @@ AndesJXAudioProcessor::AndesJXAudioProcessor()
     )
 #endif
 {
-    castParameter(apvts, ParameterID::osc1Wave, osc1WaveParam);
-    castParameter(apvts, ParameterID::osc2Wave, osc2WaveParam);
-    castParameter(apvts, ParameterID::oscMix, oscMixParam);
-    castParameter(apvts, ParameterID::oscTune, oscTuneParam);
-    castParameter(apvts, ParameterID::oscFine, oscFineParam);
-    castParameter(apvts, ParameterID::glideMode, glideModeParam);
-    castParameter(apvts, ParameterID::glideRate, glideRateParam);
-    castParameter(apvts, ParameterID::glideBend, glideBendParam);
-    castParameter(apvts, ParameterID::filterFreq, filterFreqParam);
-    castParameter(apvts, ParameterID::filterReso, filterResoParam);
-    castParameter(apvts, ParameterID::filterEnv, filterEnvParam);
-    castParameter(apvts, ParameterID::filterLFO, filterLFOParam);
-    castParameter(apvts, ParameterID::filterVelocity, filterVelocityParam);
-    castParameter(apvts, ParameterID::filterKeytrack, filterKeytrackParam);
-    castParameter(apvts, ParameterID::filterKeycenter, filterKeycenterParam);
-    castParameter(apvts, ParameterID::filterAttack, filterAttackParam);
-    castParameter(apvts, ParameterID::filterDecay, filterDecayParam);
-    castParameter(apvts, ParameterID::filterSustain, filterSustainParam);
-    castParameter(apvts, ParameterID::filterRelease, filterReleaseParam);
-    castParameter(apvts, ParameterID::envAttack, envAttackParam);
-    castParameter(apvts, ParameterID::envDecay, envDecayParam);
-    castParameter(apvts, ParameterID::envSustain, envSustainParam);
-    castParameter(apvts, ParameterID::envRelease, envReleaseParam);
-    castParameter(apvts, ParameterID::lfoRate, lfoRateParam);
-    castParameter(apvts, ParameterID::vibrato, vibratoParam);
-    castParameter(apvts, ParameterID::noise, noiseParam);
-    castParameter(apvts, ParameterID::octave, octaveParam);
-    castParameter(apvts, ParameterID::tuning, tuningParam);
-    castParameter(apvts, ParameterID::outputLevel, outputLevelParam);
-    castParameter(apvts, ParameterID::polyMode, polyModeParam);
-    castParameter(apvts, ParameterID::stereoWidth, stereoWidthParam);
-    castParameter(apvts, ParameterID::filterType, filterTypeParam);
+    castParameter(apvts, AndesParameterIDs::osc1Wave, osc1WaveParam);
+    castParameter(apvts, AndesParameterIDs::osc2Wave, osc2WaveParam);
+    castParameter(apvts, AndesParameterIDs::oscMix, oscMixParam);
+    castParameter(apvts, AndesParameterIDs::oscTune, oscTuneParam);
+    castParameter(apvts, AndesParameterIDs::oscFine, oscFineParam);
+    castParameter(apvts, AndesParameterIDs::glideMode, glideModeParam);
+    castParameter(apvts, AndesParameterIDs::glideRate, glideRateParam);
+    castParameter(apvts, AndesParameterIDs::glideBend, glideBendParam);
+    castParameter(apvts, AndesParameterIDs::filterFreq, filterFreqParam);
+    castParameter(apvts, AndesParameterIDs::filterReso, filterResoParam);
+    castParameter(apvts, AndesParameterIDs::filterEnv, filterEnvParam);
+    castParameter(apvts, AndesParameterIDs::filterLFO, filterLFOParam);
+    castParameter(apvts, AndesParameterIDs::filterVelocity, filterVelocityParam);
+    castParameter(apvts, AndesParameterIDs::filterKeytrack, filterKeytrackParam);
+    castParameter(apvts, AndesParameterIDs::filterKeycenter, filterKeycenterParam);
+    castParameter(apvts, AndesParameterIDs::filterAttack, filterAttackParam);
+    castParameter(apvts, AndesParameterIDs::filterDecay, filterDecayParam);
+    castParameter(apvts, AndesParameterIDs::filterSustain, filterSustainParam);
+    castParameter(apvts, AndesParameterIDs::filterRelease, filterReleaseParam);
+    castParameter(apvts, AndesParameterIDs::envAttack, envAttackParam);
+    castParameter(apvts, AndesParameterIDs::envDecay, envDecayParam);
+    castParameter(apvts, AndesParameterIDs::envSustain, envSustainParam);
+    castParameter(apvts, AndesParameterIDs::envRelease, envReleaseParam);
+    castParameter(apvts, AndesParameterIDs::lfoRate, lfoRateParam);
+    castParameter(apvts, AndesParameterIDs::vibrato, vibratoParam);
+    castParameter(apvts, AndesParameterIDs::noise, noiseParam);
+    castParameter(apvts, AndesParameterIDs::octave, octaveParam);
+    castParameter(apvts, AndesParameterIDs::tuning, tuningParam);
+    castParameter(apvts, AndesParameterIDs::outputLevel, outputLevelParam);
+    castParameter(apvts, AndesParameterIDs::polyMode, polyModeParam);
+    castParameter(apvts, AndesParameterIDs::stereoWidth, stereoWidthParam);
+    castParameter(apvts, AndesParameterIDs::filterType, filterTypeParam);
 
     createPrograms();
     setCurrentProgram(0);
@@ -1801,26 +1801,26 @@ juce::AudioProcessorValueTreeState::ParameterLayout AndesJXAudioProcessor::creat
     //     toWave() en update(): 0=Sine, 1=Saw, 2=Square, 3=Triangle,
     //     4=PWM.
     layout.add(std::make_unique<juce::AudioParameterChoice>(
-        ParameterID::osc1Wave,
+        AndesParameterIDs::osc1Wave,
         "Osc1 Wave",
         juce::StringArray{ "Sine", "Saw", "Square", "Triangle", "PWM" },
         1));
 
     layout.add(std::make_unique<juce::AudioParameterChoice>(
-        ParameterID::osc2Wave,
+        AndesParameterIDs::osc2Wave,
         "Osc2 Wave",
         juce::StringArray{ "Sine", "Saw", "Square", "Triangle", "PWM" },
         1));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(
-        ParameterID::stereoWidth,
+        AndesParameterIDs::stereoWidth,
         "Stereo Width",
         juce::NormalisableRange<float>(0.0f, 100.0f, 1.0f),
         50.0f,
         juce::AudioParameterFloatAttributes().withLabel("%")));
 
     layout.add(std::make_unique<juce::AudioParameterChoice>(
-        ParameterID::polyMode,
+        AndesParameterIDs::polyMode,
         "Polyphony",
         juce::StringArray{ "Mono", "Poly" },
         1));
@@ -1832,7 +1832,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout AndesJXAudioProcessor::creat
     //     una octava por debajo de osc1, un intervalo "grueso" estándar
     //     usado como punto de partida del preset Init.
     layout.add(std::make_unique<juce::AudioParameterFloat>(
-        ParameterID::oscTune,
+        AndesParameterIDs::oscTune,
         "Osc Tune",
         juce::NormalisableRange<float>(-24.0f, 24.0f, 1.0f),
         -12.0f,
@@ -1845,7 +1845,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout AndesJXAudioProcessor::creat
     //     resolución cerca de cero, donde el usuario típicamente
     //     necesita el control de detune más fino.
     layout.add(std::make_unique<juce::AudioParameterFloat>(
-        ParameterID::oscFine,
+        AndesParameterIDs::oscFine,
         "Osc Fine",
         juce::NormalisableRange<float>(-50.0f, 50.0f, 0.1f, 0.3f, true),
         0.0f,
@@ -1867,7 +1867,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout AndesJXAudioProcessor::creat
         };
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(
-        ParameterID::oscMix,
+        AndesParameterIDs::oscMix,
         "Osc Mix",
         juce::NormalisableRange<float>(0.0f, 100.0f),
         50.0f,
@@ -1880,13 +1880,13 @@ juce::AudioProcessorValueTreeState::ParameterLayout AndesJXAudioProcessor::creat
     // ------------------------------------------------------------------------
 
     layout.add(std::make_unique<juce::AudioParameterChoice>(
-        ParameterID::glideMode,
+        AndesParameterIDs::glideMode,
         "Glide Mode",
         juce::StringArray{ "Off", "Legato", "Always" },
         0));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(
-        ParameterID::glideRate,
+        AndesParameterIDs::glideRate,
         "Glide Rate",
         juce::NormalisableRange<float>(0.0f, 100.f, 1.0f),
         35.0f,
@@ -1899,7 +1899,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout AndesJXAudioProcessor::creat
     //     cerca de cero (drift sutil) y sigue permitiendo bends
     //     amplios en los extremos.
     layout.add(std::make_unique<juce::AudioParameterFloat>(
-        ParameterID::glideBend,
+        AndesParameterIDs::glideBend,
         "Glide Bend",
         juce::NormalisableRange<float>(-36.0f, 36.0f, 0.01f, 0.4f, true),
         0.0f,
@@ -1916,7 +1916,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout AndesJXAudioProcessor::creat
     //     la lambda toFilterType() en update() y con el enum FilterType
     //     en Synth.h.
     layout.add(std::make_unique<juce::AudioParameterChoice>(
-        ParameterID::filterType,
+        AndesParameterIDs::filterType,
         "Filter Type",
         juce::StringArray{ "SVF", "Moog" },
         1));
@@ -1932,14 +1932,14 @@ juce::AudioProcessorValueTreeState::ParameterLayout AndesJXAudioProcessor::creat
     //     crudo; el rango real en frecuencia se documenta aquí y en
     //     el manual del usuario.
     layout.add(std::make_unique<juce::AudioParameterFloat>(
-        ParameterID::filterFreq,
+        AndesParameterIDs::filterFreq,
         "Filter Freq",
         juce::NormalisableRange<float>(0.0f, 100.0f, 0.1f),
         75.0f,
         juce::AudioParameterFloatAttributes().withLabel("%")));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(
-        ParameterID::filterReso,
+        AndesParameterIDs::filterReso,
         "Filter Reso",
         juce::NormalisableRange<float>(0.0f, 100.0f, 1.0f),
         15.0f,
@@ -1950,14 +1950,14 @@ juce::AudioProcessorValueTreeState::ParameterLayout AndesJXAudioProcessor::creat
     // ES: Cantidad de envolvente al filtro, bipolar. Positivo abre el
     //     cutoff con la envolvente, negativo lo cierra.
     layout.add(std::make_unique<juce::AudioParameterFloat>(
-        ParameterID::filterEnv,
+        AndesParameterIDs::filterEnv,
         "Filter Env",
         juce::NormalisableRange<float>(-100.0f, 100.0f, 0.1f),
         50.0f,
         juce::AudioParameterFloatAttributes().withLabel("%")));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(
-        ParameterID::filterLFO,
+        AndesParameterIDs::filterLFO,
         "Filter LFO",
         juce::NormalisableRange<float>(0.0f, 100.0f, 1.0f),
         0.0f,
@@ -1979,7 +1979,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout AndesJXAudioProcessor::creat
         };
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(
-        ParameterID::filterVelocity,
+        AndesParameterIDs::filterVelocity,
         "Velocity",
         juce::NormalisableRange<float>(-100.0f, 100.0f, 1.0f),
         0.0f,
@@ -2000,7 +2000,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout AndesJXAudioProcessor::creat
     //     teclado desde el keycenter (tracking perfecto). 200 % =
     //     tracking doble.
     layout.add(std::make_unique<juce::AudioParameterFloat>(
-        ParameterID::filterKeytrack,
+        AndesParameterIDs::filterKeytrack,
         "Filter Keytrack",
         juce::NormalisableRange<float>(0.0f, 200.0f, 1.0f),
         100.0f,
@@ -2025,7 +2025,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout AndesJXAudioProcessor::creat
         };
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(
-        ParameterID::filterKeycenter,
+        AndesParameterIDs::filterKeycenter,
         "Filter Keycenter",
         juce::NormalisableRange<float>(24.0f, 96.0f, 1.0f),
         60.0f,
@@ -2055,49 +2055,49 @@ juce::AudioProcessorValueTreeState::ParameterLayout AndesJXAudioProcessor::creat
         };
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(
-        ParameterID::filterAttack, "Filter Attack",
+        AndesParameterIDs::filterAttack, "Filter Attack",
         juce::NormalisableRange<float>(0.0f, 100.0f, 1.0f), 0.0f,
         juce::AudioParameterFloatAttributes()
         .withLabel("").withStringFromValueFunction(envStageStringFromValue)));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(
-        ParameterID::filterDecay, "Filter Decay",
+        AndesParameterIDs::filterDecay, "Filter Decay",
         juce::NormalisableRange<float>(0.0f, 100.0f, 1.0f), 30.0f,
         juce::AudioParameterFloatAttributes()
         .withLabel("").withStringFromValueFunction(envStageStringFromValue)));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(
-        ParameterID::filterSustain, "Filter Sustain",
+        AndesParameterIDs::filterSustain, "Filter Sustain",
         juce::NormalisableRange<float>(0.0f, 100.0f, 1.0f), 0.0f,
         juce::AudioParameterFloatAttributes()
         .withLabel("").withStringFromValueFunction(sustainStringFromValue)));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(
-        ParameterID::filterRelease, "Filter Release",
+        AndesParameterIDs::filterRelease, "Filter Release",
         juce::NormalisableRange<float>(0.0f, 100.0f, 1.0f), 25.0f,
         juce::AudioParameterFloatAttributes()
         .withLabel("").withStringFromValueFunction(envStageStringFromValue)));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(
-        ParameterID::envAttack, "Env Attack",
+        AndesParameterIDs::envAttack, "Env Attack",
         juce::NormalisableRange<float>(0.0f, 100.0f, 1.0f), 0.0f,
         juce::AudioParameterFloatAttributes()
         .withLabel("").withStringFromValueFunction(envStageStringFromValue)));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(
-        ParameterID::envDecay, "Env Decay",
+        AndesParameterIDs::envDecay, "Env Decay",
         juce::NormalisableRange<float>(0.0f, 100.0f, 1.0f), 50.0f,
         juce::AudioParameterFloatAttributes()
         .withLabel("").withStringFromValueFunction(envStageStringFromValue)));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(
-        ParameterID::envSustain, "Env Sustain",
+        AndesParameterIDs::envSustain, "Env Sustain",
         juce::NormalisableRange<float>(0.0f, 100.0f, 1.0f), 100.0f,
         juce::AudioParameterFloatAttributes()
         .withLabel("").withStringFromValueFunction(sustainStringFromValue)));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(
-        ParameterID::envRelease, "Env Release",
+        AndesParameterIDs::envRelease, "Env Release",
         juce::NormalisableRange<float>(0.0f, 100.0f, 1.0f), 30.0f,
         juce::AudioParameterFloatAttributes()
         .withLabel("").withStringFromValueFunction(envStageStringFromValue)));
@@ -2122,7 +2122,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout AndesJXAudioProcessor::creat
         };
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(
-        ParameterID::lfoRate,
+        AndesParameterIDs::lfoRate,
         "LFO Rate",
         juce::NormalisableRange<float>(),
         0.81f,
@@ -2148,7 +2148,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout AndesJXAudioProcessor::creat
         };
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(
-        ParameterID::vibrato,
+        AndesParameterIDs::vibrato,
         "Vibrato",
         juce::NormalisableRange<float>(-100.0f, 100.0f, 0.1f),
         0.0f,
@@ -2162,27 +2162,27 @@ juce::AudioProcessorValueTreeState::ParameterLayout AndesJXAudioProcessor::creat
     // ------------------------------------------------------------------------
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(
-        ParameterID::noise,
+        AndesParameterIDs::noise,
         "Noise",
         juce::NormalisableRange<float>(0.0f, 100.0f, 1.0f),
         0.0f,
         juce::AudioParameterFloatAttributes().withLabel("%")));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(
-        ParameterID::octave,
+        AndesParameterIDs::octave,
         "Octave",
         juce::NormalisableRange<float>(-2.0f, 2.0f, 1.0f),
         0.0f));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(
-        ParameterID::tuning,
+        AndesParameterIDs::tuning,
         "Tuning",
         juce::NormalisableRange<float>(-100.0f, 100.0f, 0.1f),
         0.0f,
         juce::AudioParameterFloatAttributes().withLabel("cent")));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(
-        ParameterID::outputLevel,
+        AndesParameterIDs::outputLevel,
         "Output Level",
         juce::NormalisableRange<float>(-24.0f, 6.0f, 0.1f),
         0.0f,

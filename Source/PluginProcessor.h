@@ -105,7 +105,7 @@
 //     índices usado en Preset.h (param[0] = osc1Wave, ...,
 //     param[31] = stereoWidth) y con el tamaño declarado en
 //     Constants.h::NUM_PARAMS.
-namespace ParameterID
+namespace AndesParameterIDs
 {
     PARAMETER_ID(osc1Wave)
         PARAMETER_ID(osc2Wave)

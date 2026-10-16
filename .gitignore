@@ -2,3 +2,5 @@
 **/JuceLibraryCode
 **/.DS_Store
 **/Others
+# CMake build directories
+/build/
